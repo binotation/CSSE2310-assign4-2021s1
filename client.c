@@ -115,8 +115,7 @@ void get_connection(const char *port, FILE **streams) {
         exit(2);
     }
     int readFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (connect(readFd, (struct sockaddr*)res->ai_addr, 
-            sizeof(struct sockaddr))) {
+    if (connect(readFd, (struct sockaddr*)res->ai_addr, sizeof(struct sockaddr))) {
         fputs(COMM_ERR_MSG, stderr);
         exit(2);
     }
@@ -161,8 +160,7 @@ void *handle_server_comm(void *arg) {
             printf("(%s has entered the chat)\n", line.chars + 6);
         } else if (line.length > 6 && !strncmp(line.chars, "LEAVE:", 6)) {
             printf("(%s has left the chat)\n", line.chars + 6);
-        } else if (!strncmp(line.chars, "MSG:", 4) && 
-                is_valid_2_arg_cmd(line.chars)) {
+        } else if (!strncmp(line.chars, "MSG:", 4) && is_valid_2_arg_cmd(line.chars)) {
             handle_msg(line.chars);
         } else if (!strncmp(line.chars, "KICK:", 5)) {
             fputs("Kicked\n", stderr);

@@ -23,16 +23,13 @@ struct ClientNode {
     ClientNode *next; // pointer to the next node
 };
 
-void insert_client(ClientNode *root, char *name, FILE *to, 
-        pthread_mutex_t *toLock, pthread_mutex_t *listLock);
+void insert_client(ClientNode *root, char *name, FILE *to, pthread_mutex_t *toLock, pthread_mutex_t *listLock);
 
 void delete_client(ClientNode *root, char *name, pthread_mutex_t *listLock);
 
-bool check_name_exists(ClientNode *root, char *name, 
-        pthread_mutex_t *listLock);
+bool check_name_exists(ClientNode *root, char *name, pthread_mutex_t *listLock);
 
-ClientNode *get_client_node(ClientNode *root, char *name, 
-        pthread_mutex_t *listLock);
+ClientNode *get_client_node(ClientNode *root, char *name, pthread_mutex_t *listLock);
 
 void inc_stat(ClientNode *node, char stat, pthread_mutex_t *listLock);
 

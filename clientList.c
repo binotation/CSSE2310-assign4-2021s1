@@ -99,8 +99,7 @@ void delete_client(ClientNode *root, char *name, pthread_mutex_t *listLock) {
  *      listLock: lock for the clients' linked list
  *  Returns: true if the name is being used, false otherwise.
  **/
-bool check_name_exists(ClientNode *root, char *name, 
-        pthread_mutex_t *listLock) {
+bool check_name_exists(ClientNode *root, char *name, pthread_mutex_t *listLock) {
     bool exists = false;
     pthread_mutex_lock(listLock);
 
@@ -121,8 +120,7 @@ bool check_name_exists(ClientNode *root, char *name,
  *      listLock: lock for the clients' linked list
  *  Returns: the client node for the client with name or NULL if not found.
  **/
-ClientNode *get_client_node(ClientNode *root, char *name, 
-        pthread_mutex_t *listLock) {
+ClientNode *get_client_node(ClientNode *root, char *name, pthread_mutex_t *listLock) {
     pthread_mutex_lock(listLock);
 
     ClientNode *current = root->next;
@@ -160,8 +158,7 @@ void inc_stat(ClientNode *node, char stat, pthread_mutex_t *listLock) {
  *      cmd: command to send
  *      listLock: lock for the clients' linked list
  **/
-void send_to_all(ClientNode *root, const char *cmd,
-        pthread_mutex_t *listLock) {
+void send_to_all(ClientNode *root, const char *cmd, pthread_mutex_t *listLock) {
     pthread_mutex_lock(listLock);
 
     ClientNode *current = root->next;
@@ -196,8 +193,7 @@ char *get_names_list(ClientNode *root, pthread_mutex_t *listLock) {
     while (current != 0) {
         nameLength = strlen(current->data.name);
         // allocate memory for name and comma
-        names.chars = (char*)realloc(names.chars, sizeof(char) * 
-                (names.size += nameLength + 1));
+        names.chars = (char*)realloc(names.chars, sizeof(char) * (names.size += nameLength + 1));
 
         strncpy(names.chars + names.length, current->data.name, nameLength);
         // update length including comma
@@ -223,8 +219,7 @@ void show_clients_stats(ClientNode *root, pthread_mutex_t *listLock) {
     ClientNode *current = root->next;
     while (current != 0) {
         char *conv = convert_unprintable(current->data.name);
-        fprintf(stderr, "%s:SAY:%d:KICK:%d:LIST:%d\n", conv,
-                current->data.say, current->data.kick, current->data.list);
+        fprintf(stderr, "%s:SAY:%d:KICK:%d:LIST:%d\n", conv, current->data.say, current->data.kick, current->data.list);
         free(conv);
         current = current->next;
     }

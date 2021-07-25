@@ -66,8 +66,7 @@ int get_listening_socket(const char *port) {
     }
     int listenFd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (bind(listenFd, (struct sockaddr*)res->ai_addr, 
-            sizeof(struct sockaddr))) {
+    if (bind(listenFd, (struct sockaddr*)res->ai_addr, sizeof(struct sockaddr))) {
         freeaddrinfo(res);
         fputs(COMM_ERR_MSG, stderr);
         exit(2);
@@ -111,8 +110,7 @@ void send_r(FILE *to, const char *line, pthread_mutex_t *toLock) {
  *      receivedLock: received stats lock
  *      type: the type of message received
  **/
-void log_received(Received *received, pthread_mutex_t *receivedLock,
-        ReceivedType type) {
+void log_received(Received *received, pthread_mutex_t *receivedLock, ReceivedType type) {
     pthread_mutex_lock(receivedLock);
     switch (type) {
         case AUTH:
@@ -146,8 +144,7 @@ void log_received(Received *received, pthread_mutex_t *receivedLock,
  *      clientFd: the client's file descriptor
  *      arg: the client's thread arg
  **/
-void clean_up_client(FILE *to, FILE *from, pthread_mutex_t *toLock,
-        int *clientFd, HandleClientArg *arg) {
+void clean_up_client(FILE *to, FILE *from, pthread_mutex_t *toLock, int *clientFd, HandleClientArg *arg) {
     fclose(to);
     fclose(from);
     pthread_mutex_destroy(toLock);
@@ -166,8 +163,7 @@ void clean_up_client(FILE *to, FILE *from, pthread_mutex_t *toLock,
  *      receivedLock: lock for received stats
  *  Returns: true if client was authenticated, false otherwise
  **/
-bool authenticate_client(FILE *to, FILE *from, const char *auth, 
-        pthread_mutex_t *toLock, Received *received, 
+bool authenticate_client(FILE *to, FILE *from, const char *auth, pthread_mutex_t *toLock, Received *received, 
         pthread_mutex_t *receivedLock) {
     send_r(to, "AUTH:\n", toLock);
     int readsBeforeEof;
@@ -208,8 +204,7 @@ bool authenticate_client(FILE *to, FILE *from, const char *auth,
  *  Returns: client's name if name negotiation was completed, NULL if client
  *  disconnected.
  **/
-char *identify_client(FILE *to, FILE *from, pthread_mutex_t *toLock,
-        Received *received, pthread_mutex_t *receivedLock,
+char *identify_client(FILE *to, FILE *from, pthread_mutex_t *toLock, Received *received, pthread_mutex_t *receivedLock,
         ClientNode *clients, pthread_mutex_t *clientsLock) {
     send_r(to, "WHO:\n", toLock);
     int readsBeforeEof;
@@ -218,8 +213,7 @@ char *identify_client(FILE *to, FILE *from, pthread_mutex_t *toLock,
     while (readsBeforeEof == -1) {
         if (!strncmp(line.chars, "NAME:", 5)) {
             log_received(received, receivedLock, NAME);
-            if (line.length == 5 || 
-                    check_name_exists(clients, line.chars + 5, clientsLock)) {
+            if (line.length == 5 || check_name_exists(clients, line.chars + 5, clientsLock)) {
                 send_r(to, "NAME_TAKEN:\n", toLock);
             } else {
                 send_r(to, "OK:\n", toLock);
@@ -250,8 +244,7 @@ char *identify_client(FILE *to, FILE *from, pthread_mutex_t *toLock,
  *      clientsLock: lock for clients' linked list
  *      stdoutLock: lock for stdout
  **/
-void send_enter(ClientNode *clients, const char *name, 
-        pthread_mutex_t *clientsLock, pthread_mutex_t *stdoutLock) {
+void send_enter(ClientNode *clients, const char *name, pthread_mutex_t *clientsLock, pthread_mutex_t *stdoutLock) {
     // allocate total cmd length = 
     // strlen("ENTER:") + strlen(name) + strlen("\n\0") = strlen(name) + 6 + 2
     char *cmd = (char*)malloc(sizeof(char) * (strlen(name) + 8));
@@ -279,8 +272,7 @@ void send_enter(ClientNode *clients, const char *name,
  *      clientsLock: lock for clients' linked list
  *      stdoutLock: lock for stdout
  **/
-void send_leave(ClientNode *clients, const char *name, 
-        pthread_mutex_t *clientsLock, pthread_mutex_t *stdoutLock) {
+void send_leave(ClientNode *clients, const char *name, pthread_mutex_t *clientsLock, pthread_mutex_t *stdoutLock) {
     // allocate total cmd length = 
     // strlen("LEAVE:") + strlen(name) + strlen("\n\0") = strlen(name) + 6 + 2
     char *cmd = (char*)malloc(sizeof(char) * (strlen(name) + 8));
@@ -313,10 +305,8 @@ void send_leave(ClientNode *clients, const char *name,
  *      msg: contents of the SAY: msg
  *      stdoutLock: lock for stdout
  **/
-void handle_say(ClientNode *node, pthread_mutex_t *clientsLock, 
-        Received *received, pthread_mutex_t *receivedLock,
-        ClientNode *clients, const char *name, const char *msg, 
-        pthread_mutex_t *stdoutLock) {
+void handle_say(ClientNode *node, pthread_mutex_t *clientsLock, Received *received, pthread_mutex_t *receivedLock,
+        ClientNode *clients, const char *name, const char *msg, pthread_mutex_t *stdoutLock) {
     // update stats
     inc_stat(node, 's', clientsLock);
     log_received(received, receivedLock, SAY);
@@ -353,8 +343,7 @@ void handle_say(ClientNode *node, pthread_mutex_t *clientsLock,
  *      clients: clients' linked list root node
  *      name: name of the client to kick.
  **/
-void kick(ClientNode *node, pthread_mutex_t *clientsLock, 
-        pthread_mutex_t *stdoutLock, Received *received, 
+void kick(ClientNode *node, pthread_mutex_t *clientsLock, pthread_mutex_t *stdoutLock, Received *received, 
         pthread_mutex_t *receivedLock, ClientNode *clients, char *name) {
     inc_stat(node, 'k', clientsLock);
     log_received(received, receivedLock, KICK);
@@ -379,8 +368,7 @@ void kick(ClientNode *node, pthread_mutex_t *clientsLock,
  *      receivedLock: received stats lock
  *      clients: clients' linked list root node
  **/
-void handle_list(ClientNode *node, pthread_mutex_t *clientsLock,
-        Received *received, pthread_mutex_t *receivedLock, 
+void handle_list(ClientNode *node, pthread_mutex_t *clientsLock, Received *received, pthread_mutex_t *receivedLock, 
         ClientNode *clients) {
     // update stats
     inc_stat(node, 'l', clientsLock);
@@ -448,14 +436,12 @@ void *handle_client(void *tempArg) {
     HandleClientArg *arg = (HandleClientArg*)tempArg;
     FILE *from = fdopen(dup(*(arg->clientFd)), "r");
     FILE *to = fdopen(*(arg->clientFd), "w");
-    if (!authenticate_client(to, from, arg->auth, &toLock, arg->received, 
-            arg->receivedLock)) {
+    if (!authenticate_client(to, from, arg->auth, &toLock, arg->received, arg->receivedLock)) {
         clean_up_client(to, from, &toLock, arg->clientFd, arg);
         return 0;
     }
     char *name;
-    if (!(name = identify_client(to, from, &toLock, arg->received, 
-            arg->receivedLock, arg->clients, arg->clientsLock))) {
+    if (!(name = identify_client(to, from, &toLock, arg->received, arg->receivedLock, arg->clients, arg->clientsLock))) {
         clean_up_client(to, from, &toLock, arg->clientFd, arg);
         return 0;
     }
@@ -471,15 +457,12 @@ void *handle_client(void *tempArg) {
             break;
         }
         if (!strncmp(line.chars, "SAY:", 4)) {
-            handle_say(node, arg->clientsLock, arg->received, 
-                    arg->receivedLock, arg->clients, name, line.chars + 4,
+            handle_say(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients, name, line.chars + 4,
                     arg->stdoutLock);
         } else if (!strncmp(line.chars, "KICK:", 5)) {
-            kick(node, arg->clientsLock, arg->stdoutLock, arg->received, 
-                    arg->receivedLock, arg->clients, line.chars + 5);
+            kick(node, arg->clientsLock, arg->stdoutLock, arg->received, arg->receivedLock, arg->clients, line.chars + 5);
         } else if (!strncmp(line.chars, "LIST:", 5)) {
-            handle_list(node, arg->clientsLock, arg->received, 
-                    arg->receivedLock, arg->clients);
+            handle_list(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients);
         } else if (!strncmp(line.chars, "LEAVE:", 6)) {
             log_received(arg->received, arg->receivedLock, LEAVE);
             left = true;
@@ -504,8 +487,7 @@ void *handle_client(void *tempArg) {
  *      clients: clients' linked list root node
  *      clientsLock: lock for clients' list
  **/
-void accept_clients(int listenFd, char *auth, Received *received, 
-        pthread_mutex_t *receivedLock, ClientNode *clients, 
+void accept_clients(int listenFd, char *auth, Received *received, pthread_mutex_t *receivedLock, ClientNode *clients, 
         pthread_mutex_t *clientsLock) {
     struct sockaddr_in fromAddr;
     socklen_t fromAddrSize = sizeof(struct sockaddr_in);
@@ -517,8 +499,7 @@ void accept_clients(int listenFd, char *auth, Received *received,
 
     while (1) {
         int *clientFd = (int*)malloc(sizeof(int));
-        *clientFd = accept(listenFd, (struct sockaddr*)&fromAddr, 
-                &fromAddrSize);
+        *clientFd = accept(listenFd, (struct sockaddr*)&fromAddr, &fromAddrSize);
         if (*clientFd < 0) {
             free(clientFd);
             continue;
@@ -550,8 +531,7 @@ int main(int argc, char **argv) {
     String auth = get_line(authFile, &readsBeforeEof);
     fclose(authFile);
 
-    int listenFd = argc == 2 ? get_listening_socket("0") : 
-            get_listening_socket(argv[2]);
+    int listenFd = argc == 2 ? get_listening_socket("0") : get_listening_socket(argv[2]);
 
     // initialise received stats, clients list and locks
     Received *received = (Received*)calloc(1, sizeof(Received));
@@ -562,11 +542,11 @@ int main(int argc, char **argv) {
     pthread_mutex_init(&clientsLock, 0);
     // set up sig handler thread
     SigHandlerArg sigHandlerArg = {
-            .received = received,
-            .clients = clients,
-            .receivedLock = &receivedLock,
-            .clientsLock = &clientsLock
-            };
+        .received = received,
+        .clients = clients,
+        .receivedLock = &receivedLock,
+        .clientsLock = &clientsLock
+    };
 
     sigset_t set;
     pthread_t sigHandler;
@@ -577,7 +557,6 @@ int main(int argc, char **argv) {
     sigHandlerArg.set = &set;
     pthread_create(&sigHandler, NULL, show_stats, &sigHandlerArg);
 
-    accept_clients(listenFd, auth.chars, received, &receivedLock, clients,
-            &clientsLock);
+    accept_clients(listenFd, auth.chars, received, &receivedLock, clients, &clientsLock);
     return 0;
 }

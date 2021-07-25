@@ -43,8 +43,7 @@ String get_line(FILE *stream, int *readsBeforeEof) {
     
     char *pos;
     while (last != '\n') {
-        line.chars = (char*)realloc(line.chars, 
-                sizeof(char) * (line.size += inc));
+        line.chars = (char*)realloc(line.chars, sizeof(char) * (line.size += inc));
         pos = line.chars + line.length;
         if (!fgets(pos, inc + 1, stream)) {
             *readsBeforeEof = readsBeforeEofBuffer;
