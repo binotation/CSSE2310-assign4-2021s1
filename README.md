@@ -30,12 +30,12 @@ The client has access to the following commands
 Example run server
 
 ```bash
-$ ./server testing/authFile 22427
+$ ./server testing/authFile.txt 22427
 ```
 
 Example run client
 
 ```bash
-$ ./client clientName testing/authFile 22427
+$ ./client clientName testing/authFile.txt 22427
 ```
 
