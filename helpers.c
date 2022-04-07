@@ -107,4 +107,3 @@ char *convert_unprintable(const char *old) {
     new[oldLength] = '\0';
     return new;
 }
-

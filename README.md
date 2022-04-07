@@ -22,10 +22,10 @@ The client has access to the following commands
 ### Example
 Run server
 ```bash
-./server testing/authFile.txt 22427
+./server test-files/auth_file.txt 22427
 ```
 
 Run client
 ```bash
-./client clientName testing/authFile.txt 22427
+./client clientName test-files/auth_file.txt 22427
 ```
