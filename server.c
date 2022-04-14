@@ -4,8 +4,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
-#include "helpers.h"
-#include "clientList.h"
+#include "util.h"
+#include "list.h"
 
 /* The server's number of commands received stats. */
 typedef struct {

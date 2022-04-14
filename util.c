@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include "helpers.h"
+#include "util.h"
 
 /**
  *  Gets a line from a file stream.

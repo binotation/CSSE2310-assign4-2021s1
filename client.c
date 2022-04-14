@@ -5,7 +5,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include "helpers.h"
+#include "util.h"
 
 /** 
  *  Writes the client name and number to the file stream. e.g. clientName1.

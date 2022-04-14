@@ -4,8 +4,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "clientList.h"
-#include "helpers.h"
+#include "list.h"
+#include "util.h"
 
 /** 
  *  Inserts a new client into the clients' linked list.
