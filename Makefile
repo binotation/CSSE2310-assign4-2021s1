@@ -1,32 +1,52 @@
-CC=gcc
-CFLAGS=-Wall -pedantic -std=gnu99 -pthread
+CC := gcc
+CFLAGS := -Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes
+CFLAGS += -Wstrict-overflow=5 -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-enum -Wconversion
+CFLAGS += -Wunreachable-code -pedantic -pthread -std=gnu99
 
-.PHONY: clientd, server, serverd, all, alld
-.PHONY: $(shell mkdir -p obj) client
-.DEFAULT_GOAL:=all
+# directories
+OBJ := obj
+SRC := src
+TEST := test
+UNITY := $(TEST)/unity
+BUILD := build
 
-alld: CFLAGS+= -g
+# include directories
+SRCINC := -I$(SRC)
+TESTINC = $(SRCINC) -I$(UNITY)
 
-serverd: CFLAGS+= -g
+.PHONY: $(shell mkdir -p obj) $(shell mkdir -p build) clean target test
+.DEFAULT_GOAL := target
 
-clientd: CFLAGS+= -g
+# rule to build .o from src/
+$(OBJ)/%.o: $(SRC)/%.c
+	$(CC) $(CFLAGS) $(SRCINC) -c $^ -o $@
 
-all: server client
+# rule to build .o from test/
+$(OBJ)/%.o: $(TEST)/%.c
+	$(CC) $(CFLAGS) $(TESTINC) -c $^ -o $@
 
-obj/%.o: %.c
+# rule to build .o from unity/
+$(OBJ)/%.o: $(UNITY)/%.c
 	$(CC) -c $^ -o $@
 
-client: obj/client.o obj/util.o
-	$(CC) $(CFLAGS) obj/util.o obj/client.o -o client
-
-server: server.o util.o list.o
-	$(CC) $(CFLAGS) util.o list.o server.o -o server
-
-serverd: server
-
-clientd: client
-
-alld: all
-
 clean:
-	rm -f client server obj/*.o
+	rm -f $(OBJ)/* $(BUILD)/*
+
+target: server client
+
+server: $(OBJ)/server.o $(OBJ)/util.o $(OBJ)/list.o
+	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
+
+client: $(OBJ)/client.o $(OBJ)/util.o
+	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
+
+#test: test_get test_math
+
+# tests
+#test_get: $(OBJ)/unity.o $(OBJ)/test_get.o $(OBJ)/get.o
+#	$(CC) $^ -o $(BUILD)/$@
+#	$(BUILD)/$@
+
+#test_math: $(OBJ)/unity.o $(OBJ)/test_math.o $(OBJ)/math.o
+#	$(CC) $^ -o $(BUILD)/$@
+#	$(BUILD)/$@

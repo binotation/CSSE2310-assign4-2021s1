@@ -1,3 +1,13 @@
+/*
+ * Store a list of clients using a singly linked list. The two primary goals of this data structure
+ * are to provide thread-safe access to client information and quickly retrieve a list of clients
+ * in alphabetical (or ASCII) order.
+ * 
+ * Included in a client's data should be a write stream for transmitting to the client. This stream
+ * should be thread-safe. The list itself should be mutex locked as opposed to individual nodes
+ * because most operations are O(N). The root node is an empty ClientNode.
+ */
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -7,20 +17,22 @@
 
 /* Data about a client */
 typedef struct {
-    char *name; // client's name
-    FILE *to; // write stream
-    pthread_mutex_t *toLock; // write stream lock
-    int say; // no. of times received SAY:
-    int kick; // no. of times received KICK:
-    int list; // no. of times received LIST:
+    char *name;
+    // Transmit stream and lock
+    FILE *to;
+    pthread_mutex_t *toLock;
+    // Number of times received SAY:, KICK:, LIST:
+    int say;
+    int kick;
+    int list;
 } ClientData;
 
 typedef struct ClientNode ClientNode;
 
 /* Node for an ordered (by name) linked list of clients */
 struct ClientNode {
-    ClientData data; // client data
-    ClientNode *next; // pointer to the next node
+    ClientData data;
+    ClientNode *next;
 };
 
 void insert_client(ClientNode *root, char *name, FILE *to, pthread_mutex_t *toLock, pthread_mutex_t *listLock);
