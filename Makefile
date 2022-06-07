@@ -1,7 +1,5 @@
-CC := gcc
-CFLAGS := -Wextra -Wall -Wfloat-equal -Wundef -Wshadow -Wpointer-arith -Wcast-align -Wstrict-prototypes
-CFLAGS += -Wstrict-overflow=5 -Wwrite-strings -Waggregate-return -Wcast-qual -Wswitch-enum -Wconversion
-CFLAGS += -Wunreachable-code -pedantic -pthread -std=gnu99
+CC := clang
+CFLAGS := -Wall -Wextra -pthread -std=gnu17
 
 # directories
 OBJ := obj
