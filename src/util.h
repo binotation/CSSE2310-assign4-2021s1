@@ -5,8 +5,8 @@
 #define COMM_ERR_MSG "Communications error\n"
 #define AUTH_ERR_MSG "Authentication error\n"
 
-#ifndef HELPERS_H
-#define HELPERS_H
+#ifndef UTIL_H
+#define UTIL_H
 
 /* A wrapper for heap allocated strings. String.chars is the heap allocated 
  * array, String.size is the size of the allocated memory and String.length is
