@@ -5,27 +5,26 @@ CFLAGS := -Wall -Wextra -pthread -std=gnu17
 OBJ := obj
 SRC := src
 TEST := test
-UNITY := $(TEST)/unity
+UNITY := $(HOME)/repos/Unity/src
 BUILD := build
 
 # include directories
-SRCINC := -I$(SRC)
-TESTINC = $(SRCINC) -I$(UNITY)
+TESTINC = -I$(SRC) -I$(UNITY)
 
 .PHONY: $(shell mkdir -p obj) $(shell mkdir -p build) clean target test
 .DEFAULT_GOAL := target
 
 # rule to build .o from src/
 $(OBJ)/%.o: $(SRC)/%.c
-	$(CC) $(CFLAGS) $(SRCINC) -c $^ -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # rule to build .o from test/
 $(OBJ)/%.o: $(TEST)/%.c
-	$(CC) $(CFLAGS) $(TESTINC) -c $^ -o $@
+	$(CC) $(CFLAGS) $(TESTINC) -c $< -o $@
 
 # rule to build .o from unity/
 $(OBJ)/%.o: $(UNITY)/%.c
-	$(CC) -c $^ -o $@
+	$(CC) -c $< -o $@
 
 clean:
 	rm -f $(OBJ)/* $(BUILD)/*
