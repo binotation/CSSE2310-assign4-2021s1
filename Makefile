@@ -8,6 +8,8 @@ TEST := test
 UNITY := $(HOME)/repos/Unity/src
 BUILD := build
 
+VALGRIND := valgrind -s --leak-check=full --show-leak-kinds=possible --track-origins=yes
+
 # include directories
 TESTINC = -I$(SRC) -I$(UNITY)
 
@@ -37,13 +39,10 @@ server: $(OBJ)/server.o $(OBJ)/util.o $(OBJ)/list.o
 client: $(OBJ)/client.o $(OBJ)/util.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 
-#test: test_get test_math
+test%: CFLAGS += -g
+test: test_dynstring
 
 # tests
-#test_get: $(OBJ)/unity.o $(OBJ)/test_get.o $(OBJ)/get.o
-#	$(CC) $^ -o $(BUILD)/$@
-#	$(BUILD)/$@
-
-#test_math: $(OBJ)/unity.o $(OBJ)/test_math.o $(OBJ)/math.o
-#	$(CC) $^ -o $(BUILD)/$@
-#	$(BUILD)/$@
+test_dynstring: $(OBJ)/unity.o $(OBJ)/test_dynstring.o $(OBJ)/dynstring.o
+	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
+	$(VALGRIND) --log-file=$(BUILD)/$@_val.log $(BUILD)/$@
