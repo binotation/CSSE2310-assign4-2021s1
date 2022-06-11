@@ -4,6 +4,8 @@
 #ifndef DYNSTRING_H
 #define DYNSTRING_H
 
+#include <stdio.h>
+
 /**
  * Dynamically sized string. No members should be mutated externally.
  * @param .chars	buffer of chars
@@ -17,6 +19,12 @@ typedef struct
     unsigned int length;
 } DynString;
 
+enum ReadlineResult {
+    SUCCESS,
+    EOF_REACHED,
+    ERROR,
+};
+
 /**
  * Initialize DynString with size.
  * @param size	initial size in chars; size > 0.
@@ -27,5 +35,11 @@ void dynstring_init( DynString *str, unsigned int size );
  * Destroy DynString.
  */
 void dynstring_destroy( DynString *str );
+
+/**
+ * Read a line from a file stream excluding the newline.
+ * @returns if EOF was reached, error occurred or success
+ */
+enum ReadlineResult dynstring_readline( DynString *str, FILE *stream );
 
 #endif
