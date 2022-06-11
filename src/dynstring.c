@@ -36,14 +36,10 @@ enum ReadlineResult dynstring_readline( DynString *str, FILE *stream )
         else
         {
             str->length += num = strlen( str->chars + str->length );
-            if( num == shift - 1 ) // If buffer maxed out, i.e. more to read
+
+            // If buffer maxed out, i.e. more to read
+            if( num == shift - 1 && str->chars[ str->length - 1 ] != '\n' )
             {
-                // Handle edge-case where last char is newline
-                if( str->chars[ str->length - 1 ] == '\n' )
-                {
-                    TERMINATE_LAST_CHAR( str );
-                    return SUCCESS;
-                }
                 RESIZE( str );
                 shift = str->size / 2 + 1; // +1 because we overwrite '\0' in the next iteration
             }

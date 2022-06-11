@@ -21,6 +21,19 @@ void test_dynstring_init( void )
     TEST_ASSERT_EQUAL( 0, str.length );
 }
 
+// Test with 1 resize and a newline occurring in the maxed buffer
+void test_dynstring_readline_resize1( void )
+{
+    FILE *input = fopen( "test/testfiles/dynstring_readline_resize1.txt", "r" );
+    enum ReadlineResult res = dynstring_readline( &str, input );
+    TEST_ASSERT_EQUAL( SUCCESS, res );
+    TEST_ASSERT_EQUAL_STRING( "He loved her then.", str.chars );
+    TEST_ASSERT_EQUAL( 18, str.length );
+    TEST_ASSERT_EQUAL( 20, str.size );
+    fclose( input );
+}
+
+// Test with 3 resizes
 void test_dynstring_readline_resize3( void )
 {
     FILE *input = fopen( "test/testfiles/dynstring_readline_resize3.txt", "r" );
@@ -36,6 +49,7 @@ int main( void )
 {
     UNITY_BEGIN();
     RUN_TEST( test_dynstring_init );
+    RUN_TEST( test_dynstring_readline_resize1 );
     RUN_TEST( test_dynstring_readline_resize3 );
     return UNITY_END();
 }
