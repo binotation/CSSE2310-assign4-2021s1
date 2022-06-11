@@ -22,6 +22,7 @@ void dynstring_destroy( DynString *str )
 enum ReadlineResult dynstring_readline( DynString *str, FILE *stream )
 {
     str->length = 0;
+    str->chars[0] = '\0';
     char *s;
     unsigned int num;				// Number of chars read in the current iteration
     unsigned int shift = str->size;	// Number of chars to read next

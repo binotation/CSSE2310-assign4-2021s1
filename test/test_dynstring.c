@@ -33,6 +33,35 @@ void test_dynstring_readline_resize1( void )
     fclose( input );
 }
 
+// Test with 2 resizes, with only newline being read after second resize.
+void test_dynstring_readline_resize2_newline( void )
+{
+    FILE *input = fopen( "test/testfiles/dynstring_readline_resize2_newline.txt", "r" );
+    enum ReadlineResult res = dynstring_readline( &str, input );
+    TEST_ASSERT_EQUAL( SUCCESS, res );
+    TEST_ASSERT_EQUAL_STRING( "She loved him then.", str.chars );
+    TEST_ASSERT_EQUAL( 19, str.length );
+    TEST_ASSERT_EQUAL( 40, str.size );
+    fclose( input );
+}
+
+// Test with 2 resizes with no newline
+void test_dynstring_readline_resize2_eof( void )
+{
+    FILE *input = fopen( "test/testfiles/dynstring_readline_resize2_eof.txt", "r" );
+    enum ReadlineResult res = dynstring_readline( &str, input );
+    TEST_ASSERT_EQUAL( EOF_REACHED, res );
+    TEST_ASSERT_EQUAL_STRING( "She loved him then.", str.chars );
+    TEST_ASSERT_EQUAL( 19, str.length );
+    TEST_ASSERT_EQUAL( 40, str.size );
+    res = dynstring_readline( &str, input );
+    TEST_ASSERT_EQUAL( EOF_REACHED, res );
+    TEST_ASSERT_EQUAL( '\0', str.chars[0] );
+    TEST_ASSERT_EQUAL( 0, str.length );
+    TEST_ASSERT_EQUAL( 40, str.size );
+    fclose( input );
+}
+
 // Test with 3 resizes
 void test_dynstring_readline_resize3( void )
 {
@@ -50,6 +79,8 @@ int main( void )
     UNITY_BEGIN();
     RUN_TEST( test_dynstring_init );
     RUN_TEST( test_dynstring_readline_resize1 );
+    RUN_TEST( test_dynstring_readline_resize2_newline );
+    RUN_TEST( test_dynstring_readline_resize2_eof );
     RUN_TEST( test_dynstring_readline_resize3 );
     return UNITY_END();
 }
