@@ -21,9 +21,9 @@ typedef struct
 
 enum ReadlineResult
 {
-    SUCCESS,
-    EOF_REACHED,
-    ERROR,
+    READLINE_SUCCESS,
+    READLINE_EOF_REACHED,
+    READLINE_ERROR,
 };
 
 /**

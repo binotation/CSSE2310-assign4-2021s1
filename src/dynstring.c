@@ -32,7 +32,7 @@ enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
         s = fgets( dstr->str + dstr->length, shift, stream );
         if( s == NULL ) // If error or eof reached while no chars have been read
         {
-            return feof( stream ) != 0 ? EOF_REACHED : ERROR;
+            return feof( stream ) != 0 ? READLINE_EOF_REACHED : READLINE_ERROR;
         }
         else
         {
@@ -47,7 +47,7 @@ enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
             else
             {
                 TERMINATE_LAST_CHAR( dstr );
-                return SUCCESS;
+                return READLINE_SUCCESS;
             }
         }
     } while(1);
