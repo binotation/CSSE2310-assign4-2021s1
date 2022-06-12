@@ -21,6 +21,7 @@ void test_dynstring_init( void )
     TEST_ASSERT_EQUAL( 0, dstr.length );
 }
 
+// Test with EOF being read instantly
 void test_dynstring_readline_empty( void )
 {
     FILE *input = fopen( "test/testfiles/empty.txt", "r" );
@@ -32,6 +33,7 @@ void test_dynstring_readline_empty( void )
     fclose( input );
 }
 
+// Test read without resize
 void test_dynstring_readline_no_resize( void )
 {
     FILE *input = fopen( "test/testfiles/dynstring_readline_no_resize.txt", "r" );
@@ -43,6 +45,7 @@ void test_dynstring_readline_no_resize( void )
     fclose( input );
 }
 
+// Test read with newline appearing in the filled buffer, i.e. '\n' at column 9
 void test_dynstring_readline_no_resize_newline( void )
 {
     FILE *input = fopen( "test/testfiles/dynstring_readline_no_resize_newline.txt", "r" );
@@ -54,10 +57,22 @@ void test_dynstring_readline_no_resize_newline( void )
     fclose( input );
 }
 
-// Test with 1 resize and a newline occurring in the maxed buffer
+// Test with 1 resize
 void test_dynstring_readline_resize1( void )
 {
     FILE *input = fopen( "test/testfiles/dynstring_readline_resize1.txt", "r" );
+    enum ReadlineResult res = dynstring_readline( &dstr, input );
+    TEST_ASSERT_EQUAL( READLINE_SUCCESS, res );
+    TEST_ASSERT_EQUAL_STRING( "He loved her then", dstr.str );
+    TEST_ASSERT_EQUAL( 17, dstr.length );
+    TEST_ASSERT_EQUAL( 20, dstr.size );
+    fclose( input );
+}
+
+// Test with 1 resize and a newline occurring in the filled buffer
+void test_dynstring_readline_resize1_newline( void )
+{
+    FILE *input = fopen( "test/testfiles/dynstring_readline_resize1_newline.txt", "r" );
     enum ReadlineResult res = dynstring_readline( &dstr, input );
     TEST_ASSERT_EQUAL( READLINE_SUCCESS, res );
     TEST_ASSERT_EQUAL_STRING( "He loved her then.", dstr.str );
@@ -78,14 +93,31 @@ void test_dynstring_readline_resize2_newline( void )
     fclose( input );
 }
 
-// Test with 2 resizes with no newline
-void test_dynstring_readline_resize2_eof( void )
+// Test with 2 resizes with no newline and EOF read instantly after second resize
+void test_dynstring_readline_resize2_eof1( void )
 {
-    FILE *input = fopen( "test/testfiles/dynstring_readline_resize2_eof.txt", "r" );
+    FILE *input = fopen( "test/testfiles/dynstring_readline_resize2_eof1.txt", "r" );
     enum ReadlineResult res = dynstring_readline( &dstr, input );
     TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
     TEST_ASSERT_EQUAL_STRING( "She loved him then.", dstr.str );
     TEST_ASSERT_EQUAL( 19, dstr.length );
+    TEST_ASSERT_EQUAL( 40, dstr.size );
+    res = dynstring_readline( &dstr, input );
+    TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
+    TEST_ASSERT_EQUAL( '\0', dstr.str[0] );
+    TEST_ASSERT_EQUAL( 0, dstr.length );
+    TEST_ASSERT_EQUAL( 40, dstr.size );
+    fclose( input );
+}
+
+// Test with 2 resizes with no newline
+void test_dynstring_readline_resize2_eof2( void )
+{
+    FILE *input = fopen( "test/testfiles/dynstring_readline_resize2_eof2.txt", "r" );
+    enum ReadlineResult res = dynstring_readline( &dstr, input );
+    TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
+    TEST_ASSERT_EQUAL_STRING( "It's Christmas tommorrow.", dstr.str );
+    TEST_ASSERT_EQUAL( 25, dstr.length );
     TEST_ASSERT_EQUAL( 40, dstr.size );
     res = dynstring_readline( &dstr, input );
     TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
@@ -165,8 +197,10 @@ int main( void )
     RUN_TEST( test_dynstring_readline_no_resize );
     RUN_TEST( test_dynstring_readline_no_resize_newline );
     RUN_TEST( test_dynstring_readline_resize1 );
+    RUN_TEST( test_dynstring_readline_resize1_newline );
     RUN_TEST( test_dynstring_readline_resize2_newline );
-    RUN_TEST( test_dynstring_readline_resize2_eof );
+    RUN_TEST( test_dynstring_readline_resize2_eof1 );
+    RUN_TEST( test_dynstring_readline_resize2_eof2 );
     RUN_TEST( test_dynstring_readline_resize3 );
     RUN_TEST( test_dynstring_readline_multi );
     return UNITY_END();

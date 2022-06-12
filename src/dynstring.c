@@ -44,10 +44,14 @@ enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
                 RESIZE( dstr );
                 shift = dstr->size / 2 + 1; // +1 because we overwrite '\0' in the next iteration
             }
+            else if( dstr->str[ dstr->length - 1 ] != '\n' )
+            {
+                return feof( stream ) != 0 ? READLINE_EOF_REACHED : READLINE_SUCCESS;
+            }
             else
             {
                 TERMINATE_LAST_CHAR( dstr );
-                return READLINE_SUCCESS;
+                return feof( stream ) != 0 ? READLINE_EOF_REACHED : READLINE_SUCCESS;
             }
         }
     } while(1);
