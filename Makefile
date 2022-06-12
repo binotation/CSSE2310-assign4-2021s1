@@ -40,9 +40,13 @@ client: $(OBJ)/client.o $(OBJ)/util.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 
 test%: CFLAGS += -g
-test: test_dynstring
+test: test_dynstring test_clientlib
 
 # tests
 test_dynstring: $(OBJ)/unity.o $(OBJ)/test_dynstring.o $(OBJ)/dynstring.o
+	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
+	$(VALGRIND) --log-file=$(BUILD)/$@_val.log $(BUILD)/$@
+
+test_clientlib: $(OBJ)/unity.o $(OBJ)/test_clientlib.o $(OBJ)/clientlib.o $(OBJ)/dynstring.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 	$(VALGRIND) --log-file=$(BUILD)/$@_val.log $(BUILD)/$@
