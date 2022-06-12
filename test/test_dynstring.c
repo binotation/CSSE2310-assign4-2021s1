@@ -26,7 +26,7 @@ void test_dynstring_readline_empty( void )
 {
     FILE *input = fopen( "test/testfiles/empty.txt", "r" );
     enum ReadlineResult res = dynstring_readline( &dstr, input );
-    TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
+    TEST_ASSERT_EQUAL( READLINE_EOF, res );
     TEST_ASSERT_EQUAL( '\0', dstr.str[0] );
     TEST_ASSERT_EQUAL( 0, dstr.length );
     TEST_ASSERT_EQUAL( 10, dstr.size );
@@ -98,12 +98,12 @@ void test_dynstring_readline_resize2_eof1( void )
 {
     FILE *input = fopen( "test/testfiles/dynstring_readline_resize2_eof1.txt", "r" );
     enum ReadlineResult res = dynstring_readline( &dstr, input );
-    TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
+    TEST_ASSERT_EQUAL( READLINE_SUCCESS, res );
     TEST_ASSERT_EQUAL_STRING( "She loved him then.", dstr.str );
     TEST_ASSERT_EQUAL( 19, dstr.length );
     TEST_ASSERT_EQUAL( 40, dstr.size );
     res = dynstring_readline( &dstr, input );
-    TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
+    TEST_ASSERT_EQUAL( READLINE_EOF, res );
     TEST_ASSERT_EQUAL( '\0', dstr.str[0] );
     TEST_ASSERT_EQUAL( 0, dstr.length );
     TEST_ASSERT_EQUAL( 40, dstr.size );
@@ -115,12 +115,12 @@ void test_dynstring_readline_resize2_eof2( void )
 {
     FILE *input = fopen( "test/testfiles/dynstring_readline_resize2_eof2.txt", "r" );
     enum ReadlineResult res = dynstring_readline( &dstr, input );
-    TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
+    TEST_ASSERT_EQUAL( READLINE_SUCCESS, res );
     TEST_ASSERT_EQUAL_STRING( "It's Christmas tommorrow.", dstr.str );
     TEST_ASSERT_EQUAL( 25, dstr.length );
     TEST_ASSERT_EQUAL( 40, dstr.size );
     res = dynstring_readline( &dstr, input );
-    TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
+    TEST_ASSERT_EQUAL( READLINE_EOF, res );
     TEST_ASSERT_EQUAL( '\0', dstr.str[0] );
     TEST_ASSERT_EQUAL( 0, dstr.length );
     TEST_ASSERT_EQUAL( 40, dstr.size );
@@ -181,7 +181,7 @@ void test_dynstring_readline_multi( void )
     TEST_ASSERT_EQUAL( 160, dstr.size );
 
     res = dynstring_readline( &dstr, input );
-    TEST_ASSERT_EQUAL( READLINE_EOF_REACHED, res );
+    TEST_ASSERT_EQUAL( READLINE_EOF, res );
     TEST_ASSERT_EQUAL( '\0', dstr.str[0] );
     TEST_ASSERT_EQUAL( 0, dstr.length );
     TEST_ASSERT_EQUAL( 160, dstr.size );

@@ -24,6 +24,7 @@ enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
     dstr->length = 0;
     dstr->str[0] = '\0';
     char *s;
+    unsigned int count = 0;				// Number of iterations
     unsigned int num;					// Number of chars read in the current iteration
     unsigned int shift = dstr->size;	// Number of chars to read next
 
@@ -32,10 +33,13 @@ enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
         s = fgets( dstr->str + dstr->length, shift, stream );
         if( s == NULL ) // If error or eof reached while no chars have been read
         {
-            return feof( stream ) != 0 ? READLINE_EOF_REACHED : READLINE_ERROR;
+            if( feof( stream ) != 0 && count == 0 ) return READLINE_EOF;
+            else if( feof( stream ) != 0 && count > 0 ) return READLINE_SUCCESS;
+            else return READLINE_ERROR;
         }
         else
         {
+            count++;
             dstr->length += num = strlen( dstr->str + dstr->length );
 
             // If buffer maxed out, i.e. more to read
@@ -46,12 +50,12 @@ enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
             }
             else if( dstr->str[ dstr->length - 1 ] != '\n' )
             {
-                return feof( stream ) != 0 ? READLINE_EOF_REACHED : READLINE_SUCCESS;
+                return READLINE_SUCCESS;
             }
             else
             {
                 TERMINATE_LAST_CHAR( dstr );
-                return feof( stream ) != 0 ? READLINE_EOF_REACHED : READLINE_SUCCESS;
+                return READLINE_SUCCESS;
             }
         }
     } while(1);
