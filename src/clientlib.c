@@ -1,4 +1,7 @@
 #include "clientlib.h"
+#include <string.h>
+#include <unistd.h>
+#include <netdb.h>
 
 enum GetArgsResult get_args( Args *args, int argc, char **argv )
 {
@@ -22,4 +25,22 @@ enum GetArgsResult get_args( Args *args, int argc, char **argv )
 
     fclose(authfile);
     return GET_ARGS_SUCCESS;
+}
+
+bool get_connection( const char *host, const char *port, ServerStreams *server )
+{
+    struct addrinfo *res;
+    struct addrinfo hints;
+    memset( &hints, 0, sizeof(struct addrinfo) );
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if( getaddrinfo( host, port, &hints, &res )) return false;
+    int server_fd = socket( AF_INET, SOCK_STREAM, 0 );
+    if( connect( server_fd, (struct sockaddr*)res->ai_addr, sizeof(struct sockaddr))) return false;
+    int write_fd = dup( server_fd );
+    server->read = fdopen( server_fd, "r" );
+    server->write = fdopen( write_fd, "w" );
+    freeaddrinfo( res );
+    return true;
 }

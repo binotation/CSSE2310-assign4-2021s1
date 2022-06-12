@@ -49,4 +49,5 @@ test_dynstring: $(OBJ)/unity.o $(OBJ)/test_dynstring.o $(OBJ)/dynstring.o
 
 test_clientlib: $(OBJ)/unity.o $(OBJ)/test_clientlib.o $(OBJ)/clientlib.o $(OBJ)/dynstring.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
+	nc -4 -l 19224 &
 	$(VALGRIND) --log-file=$(BUILD)/$@_val.log $(BUILD)/$@

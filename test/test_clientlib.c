@@ -49,6 +49,15 @@ void test_get_args_invalid_args_count( void )
     TEST_ASSERT_EQUAL( GET_ARGS_INVALID_ARGS_COUNT, res );
 }
 
+void test_get_connection( void )
+{
+    ServerStreams server;
+    bool res = get_connection( "127.0.0.1", "19224", &server );
+    TEST_ASSERT_TRUE( res );
+    fclose( server.read );
+    fclose( server.write );
+}
+
 int main( void )
 {
     UNITY_BEGIN();
@@ -56,5 +65,6 @@ int main( void )
     RUN_TEST( test_get_args5 );
     RUN_TEST( test_get_args_authfile_not_found );
     RUN_TEST( test_get_args_invalid_args_count );
+    RUN_TEST( test_get_connection );
     return UNITY_END();
 }

@@ -2,6 +2,7 @@
 #define CLIENTLIB_H
 
 #include "dynstring.h"
+#include <stdbool.h>
 
 #define USAGE "Usage: client name authfile [host] port\n"
 
@@ -48,5 +49,10 @@ enum GetArgsResult
  * @returns if successful, authfile not found or invalid args count
  */
 enum GetArgsResult get_args( Args *args, int argc, char **argv );
+
+/**
+ * Connect to server at host, port.
+ */
+bool get_connection( const char *host, const char *port, ServerStreams *server );
 
 #endif
