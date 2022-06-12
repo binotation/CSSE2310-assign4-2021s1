@@ -58,6 +58,21 @@ void test_get_connection( void )
     fclose( server.write );
 }
 
+// Reachable blocks caused by getaddrinfo()
+// https://stackoverflow.com/questions/13229913/getaddrinfo-memory-leak/
+void test_get_connection_invalid_host( void )
+{
+    TEST_IGNORE();
+    bool res = get_connection( "jdkcj3eo", "6660", 0 );
+    TEST_ASSERT_FALSE( res );
+}
+
+void test_get_connection_bad_host( void )
+{
+    bool res = get_connection( "localhost", "17086", 0 );
+    TEST_ASSERT_FALSE( res );
+}
+
 int main( void )
 {
     UNITY_BEGIN();
@@ -66,5 +81,7 @@ int main( void )
     RUN_TEST( test_get_args_authfile_not_found );
     RUN_TEST( test_get_args_invalid_args_count );
     RUN_TEST( test_get_connection );
+    RUN_TEST( test_get_connection_invalid_host );
+    RUN_TEST( test_get_connection_bad_host );
     return UNITY_END();
 }

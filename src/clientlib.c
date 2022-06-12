@@ -37,7 +37,11 @@ bool get_connection( const char *host, const char *port, ServerStreams *server )
 
     if( getaddrinfo( host, port, &hints, &res )) return false;
     int server_fd = socket( AF_INET, SOCK_STREAM, 0 );
-    if( connect( server_fd, (struct sockaddr*)res->ai_addr, sizeof(struct sockaddr))) return false;
+    if( connect( server_fd, (struct sockaddr*)res->ai_addr, sizeof(struct sockaddr)))
+    {
+        freeaddrinfo( res );
+        return false;
+    }
     int write_fd = dup( server_fd );
     server->read = fdopen( server_fd, "r" );
     server->write = fdopen( write_fd, "w" );

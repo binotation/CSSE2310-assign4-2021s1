@@ -5,13 +5,18 @@
 #include <stdbool.h>
 
 #define USAGE "Usage: client name authfile [host] port\n"
+#define AUTHFILE_ERR_MSG "Authfile error\n"
+#define COMM_ERR_MSG "Communications error\n"
+#define AUTH_ERR_MSG "Authentication error\n"
+#define KICKED_MSG "Kicked\n"
 
 // Client exit codes
 #define NO_ERR 0;
 #define ARGS_ERR 1;
-#define COMM_ERR 2;
-#define KICKED 3;
+#define AUTHFILE_ERR 2;
+#define COMM_ERR 3;
 #define AUTH_ERR 4;
+#define KICKED 5;
 
 // The client's name as accepted by the server.
 typedef struct
