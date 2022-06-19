@@ -31,12 +31,14 @@ $(OBJ)/%.o: $(UNITY)/%.c
 clean:
 	rm -f $(OBJ)/* $(BUILD)/*
 
+debug: CFLAGS += -g
+debug: client
 target: server client
 
 server: $(OBJ)/server.o $(OBJ)/util.o $(OBJ)/list.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 
-client: $(OBJ)/client.o $(OBJ)/util.o
+client: $(OBJ)/client.o $(OBJ)/clientlib.o $(OBJ)/dynstring.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 
 test%: CFLAGS += -g

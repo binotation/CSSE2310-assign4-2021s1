@@ -60,4 +60,17 @@ enum GetArgsResult get_args( Args *args, int argc, char **argv );
  */
 bool get_connection( const char *host, const char *port, ServerStreams *server );
 
+/**
+ * Auth handshake. First receive AUTH:, reply with AUTH:authstr, and receive OK: if handshake
+ * success. Otherwise, repeat.
+ */
+bool negotiate_auth( const ServerStreams *server, const char *authstr, DynString *line );
+
+/**
+ * Name handshake. First receive WHO:, reply with NAME:chosen_name, receive OK: if handshake
+ * success, or NAME_TAKEN: if name is taken. If name is taken then concatenate uint to the name and
+ * increment until handshake succeeds.
+ */
+bool negotiate_name( const ServerStreams *server, AcceptedName *name );
+
 #endif

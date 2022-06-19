@@ -48,3 +48,33 @@ bool get_connection( const char *host, const char *port, ServerStreams *server )
     freeaddrinfo( res );
     return true;
 }
+
+bool negotiate_auth( const ServerStreams *server, const char *authstr, DynString *line )
+{
+    enum ReadlineResult readline_res;
+    bool authenticated = false;
+
+    do
+    {
+        readline_res = dynstring_readline( line, server->read );
+        if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
+        if( !strncmp( line->str, "AUTH:", 5 ) )
+        {
+            fprintf( server->write, "AUTH:%s\n", authstr );
+            fflush( server->write );
+            do
+            {
+                readline_res = dynstring_readline( line, server->read );
+                if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
+                if( !strncmp( line->str, "AUTH:", 5 ) )
+                {
+                    fprintf( server->write, "AUTH:%s\n", authstr );
+                    fflush( server->write );
+                }
+                else if( !strncmp(line->str, "OK:", 3) ) authenticated = true;
+            } while( !authenticated );
+        }
+    } while( !authenticated );
+
+    return true;
+}
