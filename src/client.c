@@ -1,95 +1,5 @@
 #include "clientlib.h"
-#include <stdlib.h>
-#include <string.h>
 #include <pthread.h>
-#include <unistd.h>
-
-// /** 
-//  *  Writes the client name and number to the file stream. e.g. clientName1.
-//  *  Params:
-//  *      stream: the file stream
-//  *      name: the client's name
-//  *      nameNum: a pointer to the int to append to the client's name, -1 if no
-//  *      int to append
-//  **/
-// void send_name(FILE *stream, const char *name, int *nameNum) {
-//     if (*nameNum == -1) {
-//         fprintf(stream, "NAME:%s\n", name);
-//     } else {
-//         fprintf(stream, "NAME:%s%d\n", name, *nameNum);
-//     }
-//     fflush(stream);
-// }               
-
-// /** 
-//  *  Authenticates the client by receiving the AUTH: challenge and responding
-//  *  and handling the reply. The client will exit with status 4 if 
-//  *  authentication is denied.
-//  *  Params:
-//  *      streams: an array with the server read and write streams.
-//  *      auth: the auth string
-//  **/
-// void authenticate(FILE **streams, char *auth) {
-//     int readsBeforeEof;
-//     String line;
-//     bool authenticated = false;
-
-//     while (!authenticated) {
-//         line = get_line(streams[0], &readsBeforeEof);
-//         if (readsBeforeEof > -1) {
-//             fputs(AUTH_ERR_MSG, stderr);
-//             exit(4);
-//         } else if (!strncmp(line.chars, "AUTH:", 5)) {
-//             fprintf(streams[1], "AUTH:%s\n", auth);
-//             fflush(streams[1]);
-            
-//             while (!authenticated) {
-//                 free(line.chars);
-//                 line = get_line(streams[0], &readsBeforeEof);
-//                 if (readsBeforeEof > -1) {
-//                     fputs(AUTH_ERR_MSG, stderr);
-//                     exit(4);
-//                 } else if (!strncmp(line.chars, "AUTH:", 5)) {
-//                     fprintf(streams[1], "AUTH:%s\n", auth);
-//                     fflush(streams[1]);
-//                 } else if (!strncmp(line.chars, "OK:", 3)) {
-//                     authenticated = true;
-//                 }
-//             }
-//         } 
-//         free(line.chars); 
-//     }
-// }
-
-// /**
-//  *  Does the name negotiation. Returns when the name is accepted by the server.
-//  *  Exits with status 2 if the connection is lost.
-//  *  Params:
-//  *      streams: an array with the server read and write streams.
-//  *      name: the client's name
-//  *      nameNum: a pointer to the int to append to the client's name, -1 if no
-//  *      int to append.
-//  **/
-// void negotiate_name(FILE **streams, const char *name, int *nameNum) {
-//     int readsBeforeEof;
-//     String line;
-//     bool named = false;
-    
-//     while (!named) {
-//         line = get_line(streams[0], &readsBeforeEof);
-//         if (readsBeforeEof > -1) {
-//             fputs(COMM_ERR_MSG, stderr);
-//             exit(2);
-//         } else if (!strncmp(line.chars, "WHO:", 4)) {
-//             send_name(streams[1], name, nameNum);
-//         } else if (!strncmp(line.chars, "NAME_TAKEN:", 11)) {
-//             (*nameNum)++;
-//         } else if (!strncmp(line.chars, "OK:", 3)) {
-//             named = true;
-//         }
-//         free(line.chars);
-//     }
-// }
 
 // /**
 //  *  Prints 'name: message' to stdout based on the command MSG:name:message.
@@ -175,14 +85,18 @@ int main( int argc, char **argv )
     dynstring_init( &line, 20 );
 
     // Authentication handshake
-    if( !negotiate_auth( &server, args.authdstr.str, &line ) )
+    if( !negotiate_auth( &server, args.authdstr.str, &line ))
     {
-        fputs(AUTH_ERR_MSG, stderr);
+        fputs( AUTH_ERR_MSG, stderr );
         return AUTH_ERR;
     }
 
-    // int nameNum = -1;
-    // negotiate_name(streams, argv[1], &nameNum);
+    CLIENTNAME_INIT( name, args.chosen_name );
+    if( !negotiate_name( &server, &name, &line ))
+    {
+        fputs( COMM_ERR_MSG, stderr );
+        return COMM_ERR;
+    }
 
     // bool exited = false;
     // pthread_t serverHandler;

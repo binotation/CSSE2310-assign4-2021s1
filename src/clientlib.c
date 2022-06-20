@@ -78,3 +78,42 @@ bool negotiate_auth( const ServerStreams *server, const char *authstr, DynString
 
     return true;
 }
+
+void send_name( FILE *write, const ClientName *name )
+{
+    switch( name->num )
+    {
+        case -1:
+            fprintf( write, "NAME:%s\n", name->name );
+            break;
+        default:
+            fprintf( write, "NAME:%s%d\n", name->name, name->num );
+    }
+    fflush( write );
+}
+
+bool negotiate_name( const ServerStreams *server, ClientName *name, DynString *line )
+{
+    enum ReadlineResult readline_res;
+    bool accepted = false;
+
+    do
+    {
+        readline_res = dynstring_readline( line, server->read );
+        if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
+        if( !strncmp( line->str, "WHO:", 4 ) )
+        {
+            send_name( server->write, name );
+            do
+            {
+                readline_res = dynstring_readline( line, server->read );
+                if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
+                if( !strncmp( line->str, "WHO:", 4 )) send_name( server->write, name );
+                else if( !strncmp( line->str, "NAME_TAKEN:", 11 )) name->num++;
+                else if( !strncmp( line->str, "OK:", 3 )) accepted = true;
+            } while ( !accepted );
+        }
+    } while ( !accepted );
+
+    return true;
+}

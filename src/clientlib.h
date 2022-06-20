@@ -20,12 +20,14 @@
 #define AUTH_ERR 5;
 #define KICKED 6;
 
+#define CLIENTNAME_INIT( var, chosen_name ) ClientName var = { .name = chosen_name, .num = -1 }
+
 // The client's name as accepted by the server.
 typedef struct
 {
     char *name;
     int num;
-} AcceptedName;
+} ClientName;
 
 // User args
 typedef struct
@@ -76,10 +78,15 @@ enum GetConnResult get_connection( const char *host, const char *port, ServerStr
 bool negotiate_auth( const ServerStreams *server, const char *authstr, DynString *line );
 
 /**
+ * Send client name over write stream.
+ */
+void send_name( FILE *write, const ClientName *name );
+
+/**
  * Name handshake. First receive WHO:, reply with NAME:chosen_name, receive OK: if handshake
  * success, or NAME_TAKEN: if name is taken. If name is taken then concatenate uint to the name and
  * increment until handshake succeeds.
  */
-bool negotiate_name( const ServerStreams *server, AcceptedName *name );
+bool negotiate_name( const ServerStreams *server, ClientName *name, DynString *line );
 
 #endif
