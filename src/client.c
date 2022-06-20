@@ -159,10 +159,16 @@ int main( int argc, char **argv )
 
     // Connect to server
     ServerStreams server;
-    if( !get_connection(args.host, args.port, &server) )
+    enum GetConnResult get_conn_res = get_connection( args.host, args.port, &server );
+    switch( get_conn_res )
     {
-        fputs(COMM_ERR_MSG, stderr);
-        return COMM_ERR;
+        case GET_CONN_HOST_INVALID:
+            fputs( HOST_ERR_MSG, stderr );
+            return HOST_ERR;
+        case GET_CONN_COMM_ERR:
+            fputs( COMM_ERR_MSG, stderr );
+            return COMM_ERR;
+        case GET_CONN_SUCCESS: break;
     }
 
     DynString line;

@@ -27,7 +27,7 @@ enum GetArgsResult get_args( Args *args, int argc, char **argv )
     return GET_ARGS_SUCCESS;
 }
 
-bool get_connection( const char *host, const char *port, ServerStreams *server )
+enum GetConnResult get_connection( const char *host, const char *port, ServerStreams *server )
 {
     struct addrinfo *res;
     struct addrinfo hints;
@@ -35,18 +35,18 @@ bool get_connection( const char *host, const char *port, ServerStreams *server )
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
-    if( getaddrinfo( host, port, &hints, &res )) return false;
+    if( getaddrinfo( host, port, &hints, &res )) return GET_CONN_HOST_INVALID;
     int server_fd = socket( AF_INET, SOCK_STREAM, 0 );
     if( connect( server_fd, (struct sockaddr*)res->ai_addr, sizeof(struct sockaddr)))
     {
         freeaddrinfo( res );
-        return false;
+        return GET_CONN_COMM_ERR;
     }
     int write_fd = dup( server_fd );
     server->read = fdopen( server_fd, "r" );
     server->write = fdopen( write_fd, "w" );
     freeaddrinfo( res );
-    return true;
+    return GET_CONN_SUCCESS;
 }
 
 bool negotiate_auth( const ServerStreams *server, const char *authstr, DynString *line )

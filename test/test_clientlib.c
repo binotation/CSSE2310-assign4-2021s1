@@ -52,8 +52,8 @@ void test_get_args_invalid_args_count( void )
 void test_get_connection( void )
 {
     ServerStreams server;
-    bool res = get_connection( "127.0.0.1", "19224", &server );
-    TEST_ASSERT_TRUE( res );
+    enum GetConnResult res = get_connection( "127.0.0.1", "19224", &server );
+    TEST_ASSERT_EQUAL( GET_CONN_SUCCESS, res );
     fclose( server.read );
     fclose( server.write );
 }
@@ -63,14 +63,14 @@ void test_get_connection( void )
 void test_get_connection_invalid_host( void )
 {
     TEST_IGNORE();
-    bool res = get_connection( "jdkcj3eo", "6660", 0 );
-    TEST_ASSERT_FALSE( res );
+    enum GetConnResult res = get_connection( "jdkcj3eo", "6660", 0 );
+    TEST_ASSERT_EQUAL( GET_CONN_HOST_INVALID, res );
 }
 
 void test_get_connection_bad_host( void )
 {
-    bool res = get_connection( "localhost", "17086", 0 );
-    TEST_ASSERT_FALSE( res );
+    enum GetConnResult res = get_connection( "localhost", "17086", 0 );
+    TEST_ASSERT_EQUAL( GET_CONN_COMM_ERR, res );
 }
 
 int main( void )
