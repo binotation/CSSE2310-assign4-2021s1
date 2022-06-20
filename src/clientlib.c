@@ -1,4 +1,6 @@
 #include "clientlib.h"
+#include "util.h"
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <netdb.h>
@@ -116,4 +118,62 @@ bool negotiate_name( const ServerStreams *server, ClientName *name, DynString *l
     } while ( !accepted );
 
     return true;
+}
+
+static void handle_msg( TwoArgs *targs )
+{
+    fwrite( targs->arg1.str, targs->arg1.length, sizeof(char), stdout );
+    fputs(": ", stdout);
+    fwrite( targs->arg2.str, targs->arg2.length, sizeof(char), stdout );
+    fputs("\n", stdout);
+}
+
+void *handle_server_comm( void *arg )
+{
+    FILE *read = (FILE*)arg;
+    DynString line;
+    dynstring_init( &line, 20 );
+    enum ReadlineResult readline_res;
+    TwoArgs targs;
+    int exit_status = 0;
+
+    while ( exit_status == 0 )
+    {
+        readline_res = dynstring_readline( &line, read );
+        if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF )
+        {
+            exit_status = COMM_ERR;
+        }
+        else if( line.length > 6 && !strncmp( line.str, "ENTER:", 6 ))
+        {
+            printf( "(%s has entered the chat)\n", line.str + 6 );
+        }
+        else if( line.length > 6 && !strncmp( line.str, "LEAVE:", 6 ))
+        {
+            printf( "(%s has left the chat)\n", line.str + 6 );
+        }
+        else if( !strncmp(line.str, "MSG:", 4) && get_two_args( line.str, &targs ))
+        {
+            handle_msg( &targs );
+        }
+        else if(!strncmp(line.str, "KICK:", 5 ))
+        {
+            exit_status = KICKED;
+        }
+        else if( line.length > 5 && !strncmp( line.str, "LIST:", 5 ))
+        {
+            printf( "(current chatters: %s)\n", line.str + 5 );
+        }
+        fflush(stdout);
+    }
+    dynstring_destroy( &line );
+    switch( exit_status )
+    {
+        case COMM_ERR:
+            fputs(COMM_ERR_MSG, stderr);
+            break;
+        case KICKED:
+            fputs(KICKED_MSG, stderr);
+    }
+    exit( exit_status );
 }

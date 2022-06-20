@@ -12,13 +12,13 @@
 #define KICKED_MSG "Kicked\n"
 
 // Client exit codes
-#define NO_ERR 0;
-#define ARGS_ERR 1;
-#define AUTHFILE_ERR 2;
-#define HOST_ERR 3;
-#define COMM_ERR 4;
-#define AUTH_ERR 5;
-#define KICKED 6;
+#define NO_ERR 0
+#define ARGS_ERR 1
+#define AUTHFILE_ERR 2
+#define HOST_ERR 3
+#define COMM_ERR 4
+#define AUTH_ERR 5
+#define KICKED 6
 
 #define CLIENTNAME_INIT( var, chosen_name ) ClientName var = { .name = chosen_name, .num = -1 }
 
@@ -88,5 +88,10 @@ void send_name( FILE *write, const ClientName *name );
  * increment until handshake succeeds.
  */
 bool negotiate_name( const ServerStreams *server, ClientName *name, DynString *line );
+
+/**
+ * Thread routine to handle server communication.
+ */
+void *handle_server_comm( void *arg );
 
 #endif

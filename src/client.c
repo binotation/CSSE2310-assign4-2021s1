@@ -1,54 +1,6 @@
 #include "clientlib.h"
+#include <string.h>
 #include <pthread.h>
-
-// /**
-//  *  Prints 'name: message' to stdout based on the command MSG:name:message.
-//  *  Params:
-//  *      cmd: the command string of the format 'MSG:name:message'
-//  **/
-// void handle_msg(char *cmd) {
-//     char *firstArgIndex = strstr(cmd, ":") + 1;
-//     char *secondArgIndex = strstr(firstArgIndex, ":") + 1;
-//     char *firstArg = get_first_arg(cmd);
-//     printf("%s: %s\n", firstArg, secondArgIndex);
-//     fflush(stdout);
-//     free(firstArg);
-// }
-
-// /** 
-//  *  Thread routine for handling server communication. The client exits if EOF 
-//  *  is read or the client is kicked.
-//  *  Params:
-//  *      arg: the server read stream
-//  *  Returns: NULL
-//  **/
-// void *handle_server_comm(void *arg) {
-//     FILE *from = (FILE*)arg;
-//     int readsBeforeEof;
-//     String line;
-
-//     while (1) {
-//         line = get_line(from, &readsBeforeEof);
-//         if (readsBeforeEof > -1) {
-//             fputs(COMM_ERR_MSG, stderr);
-//             exit(2);
-//         } else if (line.length > 6 && !strncmp(line.chars, "ENTER:", 6)) {
-//             printf("(%s has entered the chat)\n", line.chars + 6);
-//         } else if (line.length > 6 && !strncmp(line.chars, "LEAVE:", 6)) {
-//             printf("(%s has left the chat)\n", line.chars + 6);
-//         } else if (!strncmp(line.chars, "MSG:", 4) && is_valid_2_arg_cmd(line.chars)) {
-//             handle_msg(line.chars);
-//         } else if (!strncmp(line.chars, "KICK:", 5)) {
-//             fputs("Kicked\n", stderr);
-//             exit(3);
-//         } else if (line.length > 5 && !strncmp(line.chars, "LIST:", 5)) {
-//             printf("(current chatters: %s)\n", line.chars + 5);
-//         }
-//         fflush(stdout);
-//         free(line.chars);
-//     }
-//     return 0;
-// }
 
 int main( int argc, char **argv )
 {
@@ -60,7 +12,7 @@ int main( int argc, char **argv )
     {
         case GET_ARGS_INVALID_ARGS_COUNT:
             fputs( USAGE, stderr );
-            return ARGS_ERR
+            return ARGS_ERR;
         case GET_ARGS_AUTHFILE_NOT_FOUND:
             fputs( AUTHFILE_ERR_MSG, stderr );
             return AUTHFILE_ERR;
@@ -90,6 +42,7 @@ int main( int argc, char **argv )
         fputs( AUTH_ERR_MSG, stderr );
         return AUTH_ERR;
     }
+    dynstring_destroy( &args.authdstr );
 
     CLIENTNAME_INIT( name, args.chosen_name );
     if( !negotiate_name( &server, &name, &line ))
@@ -98,34 +51,33 @@ int main( int argc, char **argv )
         return COMM_ERR;
     }
 
-    // bool exited = false;
-    // pthread_t serverHandler;
-    // pthread_create(&serverHandler, 0, handle_server_comm, (void*)streams[0]);
+    bool exited = false;
+    pthread_t server_handler;
+    pthread_create( &server_handler, 0, handle_server_comm, (void*)server.read );
 
-    // String line;
-    // do {
-    //     line = get_line(stdin, &readsBeforeEof);
-    //     if (readsBeforeEof > -1) {
-    //         free(line.chars);
-    //         break;
-    //     }
-    //     if (line.chars[0] == '*') {
-    //         fprintf(streams[1], "%s\n", line.chars + 1);
-    //         if (!strncmp(line.chars + 1, "LEAVE:", 6)) {
-    //             exited = true;
-    //         }
-    //     } else {
-    //         fprintf(streams[1], "SAY:%s\n", line.chars);
-    //     }
-    //     fflush(streams[1]);
-    //     free(line.chars);
-    // } while (!exited);
-    // pthread_cancel(serverHandler);
-    // pthread_join(serverHandler, 0);
+    enum ReadlineResult readline_res;
+
+    do {
+        readline_res = dynstring_readline( &line, stdin );
+        if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) break;
+        if ( line.str[0] == '*' )
+        {
+            fprintf( server.write, "%s\n", line.str + 1 );
+            if ( !strncmp( line.str + 1, "LEAVE:", 6 )) exited = true;
+        }
+        else
+        {
+            fprintf( server.write, "SAY:%s\n", line.str );
+        }
+        fflush(server.write);
+    } while ( !exited );
+
+    pthread_cancel(server_handler);
+    pthread_join(server_handler, 0);
 
     dynstring_destroy( &line );
     fclose( server.read );
     fclose( server.write );
-    dynstring_destroy( &args.authdstr );
+
     return NO_ERR;
 }
