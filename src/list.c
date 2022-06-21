@@ -1,59 +1,96 @@
-#include <pthread.h>
+#include "list.h"
 #include <strings.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include "list.h"
-#include "util.h"
 
-/** 
- *  Inserts a new client into the clients' linked list.
- *  Params:
- *      root: linked list root node
- *      name: new client's name
- *      to: new client's write stream
- *      toLock: new client's write stream lock
- *      listLock: lock for the clients' linked list
- **/
-void insert_client(ClientNode *root, char *name, FILE *to, 
-        pthread_mutex_t *toLock, pthread_mutex_t *listLock) {
-    ClientNode *newNode = (ClientNode*)calloc(1, sizeof(ClientNode));
-    // set new client's data
-    newNode->data.name = name;
-    newNode->data.to = to;
-    newNode->data.toLock = toLock;
+// If tail node, append new_node.
+#define APPEND_IF_TAIL( tail )						\
+{													\
+    if( tail == 0 )									\
+    {												\
+        tail = new_node;							\
+        new_node->next = 0; /* God bless valgrind */\
+        pthread_mutex_unlock( &list->lock );		\
+        return;										\
+    }												\
+}
 
-    pthread_mutex_lock(listLock);
+// If new_node < curr->data.name, insert before curr node.
+#define INSERT_NODE_IF_ORDERED( prev_next, curr )	\
+{													\
+    if( strcasecmp( name, curr->data.name ) <= 0 )	\
+    {												\
+        new_node->next = curr;						\
+        prev_next = new_node;						\
+        pthread_mutex_unlock( &list->lock );		\
+        return;										\
+    }												\
+}
 
-    ClientNode *current = root->next;
-    ClientNode *prev = root;
-    char *nextName;
+void list_init( ClientList *list )
+{
+    list->head = 0;
+    pthread_mutex_init( &list->lock, 0 );
+}
 
-    // if empty list, append
-    if (current == 0) {
-        prev->next = newNode;
-        pthread_mutex_unlock(listLock);
-        return;
+void list_destroy( ClientList *list )
+{
+    ListNode *next, *curr;
+    pthread_mutex_lock( &list->lock );
+    curr = list->head;
+
+    if( curr == 0 )
+    {
+    }
+    else if( curr->next == 0 )
+    {
+        free( curr );
+    }
+    else
+    {
+        do
+        {
+            next = curr->next;
+            free( curr );
+            curr = next;
+        } while ( curr != 0 );
     }
 
-    nextName = current->data.name;
-    while (strcasecmp(name, nextName) > 0) {
-        // go next until newName < nextName lexicographically
-        current = current->next;
+    pthread_mutex_unlock( &list->lock );
+    pthread_mutex_destroy( &list->lock );
+}
+
+void list_insert( ClientList *list, const char *name, FILE *tx, pthread_mutex_t *tx_lock )
+{
+    // Create new node
+    ListNode *new_node = malloc( sizeof(ListNode) );
+    new_node->data = (ClientData)
+    {
+        .name = name,
+        .tx = tx,
+        .tx_lock = tx_lock,
+        .say = 0,
+        .kick = 0,
+        .list = 0,
+    };
+
+    pthread_mutex_lock( &list->lock );
+
+    // If empty list, append
+    APPEND_IF_TAIL( list->head )
+
+    // Head node exists
+    INSERT_NODE_IF_ORDERED( list->head, list->head )
+
+    ListNode *curr = list->head->next;
+    ListNode *prev = list->head;
+
+    do
+    {
+        APPEND_IF_TAIL( prev->next )
+        INSERT_NODE_IF_ORDERED( prev->next, curr )
+        curr = curr->next;
         prev = prev->next;
-
-        if (current == 0) { // end of list
-            prev->next = newNode; // append
-            pthread_mutex_unlock(listLock);
-            return;
-        }
-        nextName = current->data.name;
-    }
-    // insert newNode: prev->new->current
-    newNode->next = current;
-    prev->next = newNode;
-    pthread_mutex_unlock(listLock);
+    } while(1);
 }
 
 /**
@@ -63,33 +100,33 @@ void insert_client(ClientNode *root, char *name, FILE *to,
  *      name: name of client to delete
  *      listLock: lock for the clients' linked list
  **/
-void delete_client(ClientNode *root, char *name, pthread_mutex_t *listLock) {
-    pthread_mutex_lock(listLock);
+// void delete_client(ClientNode *root, char *name, pthread_mutex_t *listLock) {
+//     pthread_mutex_lock(listLock);
 
-    ClientNode *current = root->next;
-    ClientNode *prev = root;
+//     ClientNode *current = root->next;
+//     ClientNode *prev = root;
 
-    // return if empty
-    if (current == 0) {
-        pthread_mutex_unlock(listLock);
-        return;
-    }
+//     // return if empty
+//     if (current == 0) {
+//         pthread_mutex_unlock(listLock);
+//         return;
+//     }
     
-    // go next until name matches
-    while (strcmp(current->data.name, name)) {
-        current = current->next;
-        prev = prev->next;
-        if (current == 0) { // return if at end
-            pthread_mutex_unlock(listLock);
-            return;
-        }
-    }
-    // delete and free node
-    ClientNode *next = current->next;
-    free(current);
-    prev->next = next;
-    pthread_mutex_unlock(listLock);
-}
+//     // go next until name matches
+//     while (strcmp(current->data.name, name)) {
+//         current = current->next;
+//         prev = prev->next;
+//         if (current == 0) { // return if at end
+//             pthread_mutex_unlock(listLock);
+//             return;
+//         }
+//     }
+//     // delete and free node
+//     ClientNode *next = current->next;
+//     free(current);
+//     prev->next = next;
+//     pthread_mutex_unlock(listLock);
+// }
 
 /**
  *  Checks if a name is being used by an existing client.
@@ -99,18 +136,18 @@ void delete_client(ClientNode *root, char *name, pthread_mutex_t *listLock) {
  *      listLock: lock for the clients' linked list
  *  Returns: true if the name is being used, false otherwise.
  **/
-bool check_name_exists(ClientNode *root, char *name, pthread_mutex_t *listLock) {
-    bool exists = false;
-    pthread_mutex_lock(listLock);
+// bool check_name_exists(ClientNode *root, char *name, pthread_mutex_t *listLock) {
+//     bool exists = false;
+//     pthread_mutex_lock(listLock);
 
-    ClientNode *current = root->next;
-    while (current != 0 && !exists) {
-        exists = exists || !strcmp(current->data.name, name);
-        current = current->next;
-    }
-    pthread_mutex_unlock(listLock);
-    return exists;
-}
+//     ClientNode *current = root->next;
+//     while (current != 0 && !exists) {
+//         exists = exists || !strcmp(current->data.name, name);
+//         current = current->next;
+//     }
+//     pthread_mutex_unlock(listLock);
+//     return exists;
+// }
 
 /**
  *  Gets the client node for the corresponding client name.
@@ -120,16 +157,16 @@ bool check_name_exists(ClientNode *root, char *name, pthread_mutex_t *listLock) 
  *      listLock: lock for the clients' linked list
  *  Returns: the client node for the client with name or NULL if not found.
  **/
-ClientNode *get_client_node(ClientNode *root, char *name, pthread_mutex_t *listLock) {
-    pthread_mutex_lock(listLock);
+// ClientNode *get_client_node(ClientNode *root, char *name, pthread_mutex_t *listLock) {
+//     pthread_mutex_lock(listLock);
 
-    ClientNode *current = root->next;
-    while (current != 0 && strcmp(name, current->data.name)) {
-        current = current->next;
-    }
-    pthread_mutex_unlock(listLock);
-    return current;
-}
+//     ClientNode *current = root->next;
+//     while (current != 0 && strcmp(name, current->data.name)) {
+//         current = current->next;
+//     }
+//     pthread_mutex_unlock(listLock);
+//     return current;
+// }
 
 /**
  *  Increments a client's stat specified by char stat.
@@ -139,17 +176,17 @@ ClientNode *get_client_node(ClientNode *root, char *name, pthread_mutex_t *listL
  *      'l' for LIST:
  *      listLock: lock for the clients' linked list
  **/
-void inc_stat(ClientNode *node, char stat, pthread_mutex_t *listLock) {
-    pthread_mutex_lock(listLock);
-    if (stat == 's') {
-        node->data.say++;
-    } else if (stat == 'k') {
-        node->data.kick++;
-    } else if (stat == 'l') {
-        node->data.list++;
-    }
-    pthread_mutex_unlock(listLock);
-}
+// void inc_stat(ClientNode *node, char stat, pthread_mutex_t *listLock) {
+//     pthread_mutex_lock(listLock);
+//     if (stat == 's') {
+//         node->data.say++;
+//     } else if (stat == 'k') {
+//         node->data.kick++;
+//     } else if (stat == 'l') {
+//         node->data.list++;
+//     }
+//     pthread_mutex_unlock(listLock);
+// }
 
 /**
  *  Sends a command string to all clients.
@@ -158,21 +195,21 @@ void inc_stat(ClientNode *node, char stat, pthread_mutex_t *listLock) {
  *      cmd: command to send
  *      listLock: lock for the clients' linked list
  **/
-void send_to_all(ClientNode *root, const char *cmd, pthread_mutex_t *listLock) {
-    pthread_mutex_lock(listLock);
+// void send_to_all(ClientNode *root, const char *cmd, pthread_mutex_t *listLock) {
+//     pthread_mutex_lock(listLock);
 
-    ClientNode *current = root->next;
-    while (current != 0) {
-        pthread_mutex_lock(current->data.toLock);
-        // send
-        fputs(cmd, current->data.to);
-        fflush(current->data.to);
+//     ClientNode *current = root->next;
+//     while (current != 0) {
+//         pthread_mutex_lock(current->data.toLock);
+//         // send
+//         fputs(cmd, current->data.to);
+//         fflush(current->data.to);
 
-        pthread_mutex_unlock(current->data.toLock);
-        current = current->next;
-    }
-    pthread_mutex_unlock(listLock);
-}
+//         pthread_mutex_unlock(current->data.toLock);
+//         current = current->next;
+//     }
+//     pthread_mutex_unlock(listLock);
+// }
 
 /**
  *  Get a list of client names.
@@ -181,31 +218,31 @@ void send_to_all(ClientNode *root, const char *cmd, pthread_mutex_t *listLock) {
  *      listLock: lock for the clients' linked list
  *  Returns: a list of client names as a string.
  **/
-char *get_names_list(ClientNode *root, pthread_mutex_t *listLock) {
-    int nameLength;
-    // String for list of names e.g. name1,name2,name3
-    String names;
-    memset(&names, 0, sizeof(String));
+// char *get_names_list(ClientNode *root, pthread_mutex_t *listLock) {
+//     int nameLength;
+//     // String for list of names e.g. name1,name2,name3
+//     String names;
+//     memset(&names, 0, sizeof(String));
 
-    pthread_mutex_lock(listLock);
+//     pthread_mutex_lock(listLock);
 
-    ClientNode *current = root->next;
-    while (current != 0) {
-        nameLength = strlen(current->data.name);
-        // allocate memory for name and comma
-        names.chars = (char*)realloc(names.chars, sizeof(char) * (names.size += nameLength + 1));
+//     ClientNode *current = root->next;
+//     while (current != 0) {
+//         nameLength = strlen(current->data.name);
+//         // allocate memory for name and comma
+//         names.chars = (char*)realloc(names.chars, sizeof(char) * (names.size += nameLength + 1));
 
-        strncpy(names.chars + names.length, current->data.name, nameLength);
-        // update length including comma
-        names.length += nameLength + 1;
-        names.chars[names.length - 1] = ',';
-        current = current->next;
-    }
-    pthread_mutex_unlock(listLock);
-    // replace last comma with null terminator
-    names.chars[names.length - 1] = '\0';
-    return names.chars;
-}
+//         strncpy(names.chars + names.length, current->data.name, nameLength);
+//         // update length including comma
+//         names.length += nameLength + 1;
+//         names.chars[names.length - 1] = ',';
+//         current = current->next;
+//     }
+//     pthread_mutex_unlock(listLock);
+//     // replace last comma with null terminator
+//     names.chars[names.length - 1] = '\0';
+//     return names.chars;
+// }
 
 /**
  *  Prints each clients stats to stderr. e.g. clientName:SAY:5:KICK:2:LIST:3 .
@@ -213,15 +250,15 @@ char *get_names_list(ClientNode *root, pthread_mutex_t *listLock) {
  *      root: linked list root node
  *      listLock: lock for the clients' linked list
  **/
-void show_clients_stats(ClientNode *root, pthread_mutex_t *listLock) {
-    pthread_mutex_lock(listLock);
+// void show_clients_stats(ClientNode *root, pthread_mutex_t *listLock) {
+//     pthread_mutex_lock(listLock);
 
-    ClientNode *current = root->next;
-    while (current != 0) {
-        char *conv = convert_unprintable(current->data.name);
-        fprintf(stderr, "%s:SAY:%d:KICK:%d:LIST:%d\n", conv, current->data.say, current->data.kick, current->data.list);
-        free(conv);
-        current = current->next;
-    }
-    pthread_mutex_unlock(listLock);
-}
+//     ClientNode *current = root->next;
+//     while (current != 0) {
+//         char *conv = convert_unprintable(current->data.name);
+//         fprintf(stderr, "%s:SAY:%d:KICK:%d:LIST:%d\n", conv, current->data.say, current->data.kick, current->data.list);
+//         free(conv);
+//         current = current->next;
+//     }
+//     pthread_mutex_unlock(listLock);
+// }

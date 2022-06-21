@@ -42,7 +42,7 @@ client: $(OBJ)/client.o $(OBJ)/clientlib.o $(OBJ)/dynstring.o $(OBJ)/util.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 
 test%: CFLAGS += -g
-test: test_dynstring test_clientlib
+test: test_dynstring test_clientlib test_list
 
 # tests
 test_dynstring: $(OBJ)/unity.o $(OBJ)/test_dynstring.o $(OBJ)/dynstring.o
@@ -52,4 +52,8 @@ test_dynstring: $(OBJ)/unity.o $(OBJ)/test_dynstring.o $(OBJ)/dynstring.o
 test_clientlib: $(OBJ)/unity.o $(OBJ)/test_clientlib.o $(OBJ)/clientlib.o $(OBJ)/dynstring.o $(OBJ)/util.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 	nc -4 -l 19224 &
+	$(VALGRIND) --log-file=$(BUILD)/$@_val.log $(BUILD)/$@
+
+test_list: $(OBJ)/unity.o $(OBJ)/test_list.o $(OBJ)/list.o
+	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 	$(VALGRIND) --log-file=$(BUILD)/$@_val.log $(BUILD)/$@
