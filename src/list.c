@@ -1,6 +1,7 @@
 #include "list.h"
-#include <strings.h>
 #include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 
 // If tail node, append new_node.
 #define APPEND_IF_TAIL( tail )						\
@@ -24,6 +25,14 @@
         pthread_mutex_unlock( &list->lock );		\
         return;										\
     }												\
+}
+
+#define DELETE_NODE( prev_next, curr_next, target )	\
+{													\
+    prev_next = curr_next;							\
+    free( target );									\
+    pthread_mutex_unlock( &list->lock );			\
+    return;											\
 }
 
 void list_init( ClientList *list )
@@ -93,40 +102,41 @@ void list_insert( ClientList *list, const char *name, FILE *tx, pthread_mutex_t 
     } while(1);
 }
 
-/**
- *  Deletes a client from the clients' linked list.
- *  Params:
- *      root: linked list root node
- *      name: name of client to delete
- *      listLock: lock for the clients' linked list
- **/
-// void delete_client(ClientNode *root, char *name, pthread_mutex_t *listLock) {
-//     pthread_mutex_lock(listLock);
+void list_delete( ClientList *list, const char *name )
+{
+    ListNode *curr, *prev, *target;
+    pthread_mutex_lock( &list->lock );
 
-//     ClientNode *current = root->next;
-//     ClientNode *prev = root;
-
-//     // return if empty
-//     if (current == 0) {
-//         pthread_mutex_unlock(listLock);
-//         return;
-//     }
-    
-//     // go next until name matches
-//     while (strcmp(current->data.name, name)) {
-//         current = current->next;
-//         prev = prev->next;
-//         if (current == 0) { // return if at end
-//             pthread_mutex_unlock(listLock);
-//             return;
-//         }
-//     }
-//     // delete and free node
-//     ClientNode *next = current->next;
-//     free(current);
-//     prev->next = next;
-//     pthread_mutex_unlock(listLock);
-// }
+    if( list->head == 0 )
+    {
+        pthread_mutex_unlock( &list->lock );
+        return;
+    }
+    else if( !strcmp( name, list->head->data.name ))
+    {
+        target = list->head;
+        DELETE_NODE( list->head, list->head->next, target )
+    }
+    else
+    {
+        prev = list->head;
+        curr = list->head->next;
+        do
+        {
+            if( curr == 0 )
+            {
+                pthread_mutex_unlock( &list->lock );
+                return;
+            }
+            else if( !strcmp( name, curr->data.name ))
+            {
+                DELETE_NODE( prev->next, curr->next, curr )
+            }
+            prev = prev->next;
+            curr = curr->next;
+        } while(1);
+    }
+}
 
 /**
  *  Checks if a name is being used by an existing client.

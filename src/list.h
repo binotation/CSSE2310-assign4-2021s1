@@ -60,7 +60,7 @@ void list_insert( ClientList *list, const char *name, FILE *tx, pthread_mutex_t 
 /**
  * Delete a client identified by name.
  */
-// void list_delete( ClientList *list, char *name );
+void list_delete( ClientList *list, const char *name );
 
 // bool check_name_exists(ClientNode *root, char *name, pthread_mutex_t *listLock);
 
