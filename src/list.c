@@ -3,28 +3,23 @@
 #include <string.h>
 #include <strings.h>
 
-// If tail node, append new_node.
-#define APPEND_IF_TAIL( tail )						\
-{													\
-    if( tail == 0 )									\
-    {												\
-        tail = new_node;							\
-        new_node->next = 0; /* God bless valgrind */\
-        pthread_mutex_unlock( &list->lock );		\
-        return;										\
-    }												\
-}
-
-// If new_node < curr->data.name, insert before curr node.
-#define INSERT_NODE_IF_ORDERED( prev_next, curr )	\
-{													\
-    if( strcasecmp( name, curr->data.name ) <= 0 )	\
-    {												\
-        new_node->next = curr;						\
-        prev_next = new_node;						\
-        pthread_mutex_unlock( &list->lock );		\
-        return;										\
-    }												\
+// If curr is tail -> append, else if ordered -> insert.
+#define INSERT_NODE( prev_next, curr )					\
+{														\
+    if( curr == 0 )										\
+    {													\
+        prev_next = new_node;							\
+        new_node->next = 0; /* God bless valgrind */	\
+        pthread_mutex_unlock( &list->lock );			\
+        return;											\
+    }													\
+    else if( strcasecmp( name, curr->data.name ) <= 0 )	\
+    {													\
+        new_node->next = curr;							\
+        prev_next = new_node;							\
+        pthread_mutex_unlock( &list->lock );			\
+        return;											\
+    }													\
 }
 
 #define DELETE_NODE( prev_next, curr_next, target )	\
@@ -84,19 +79,14 @@ void list_insert( ClientList *list, const char *name, FILE *tx, pthread_mutex_t 
 
     pthread_mutex_lock( &list->lock );
 
-    // If empty list, append
-    APPEND_IF_TAIL( list->head )
-
-    // Head node exists
-    INSERT_NODE_IF_ORDERED( list->head, list->head )
-
+    // Head node edge-case
+    INSERT_NODE( list->head, list->head )
     ListNode *curr = list->head->next;
     ListNode *prev = list->head;
 
     do
     {
-        APPEND_IF_TAIL( prev->next )
-        INSERT_NODE_IF_ORDERED( prev->next, curr )
+        INSERT_NODE( prev->next, curr )
         curr = curr->next;
         prev = prev->next;
     } while(1);
