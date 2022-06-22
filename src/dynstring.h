@@ -33,9 +33,21 @@ enum ReadlineResult
 void dynstring_init( DynString *dstr, unsigned int size );
 
 /**
+ * Create a dynstring from str by copying memory of length. dstr must be uninitialized.
+ * @param length	length of str excluding NULL terminator
+ */
+void dynstring_nfrom( DynString *dstr, const char *str, unsigned int length );
+
+/**
  * Destroy DynString.
  */
 void dynstring_destroy( DynString *dstr );
+
+/**
+ * Append str of length to dstr.
+ * @param length	length of str excluding NULL terminator
+ */
+void dynstring_npush( DynString *dstr, const char *str, unsigned int length );
 
 /**
  * Read a line from a file stream excluding the newline.

@@ -2,6 +2,7 @@
 #include "dynstring.h"
 
 static DynString dstr;
+static const char *sentence = "They looked up at the sky and saw a million stars";
 
 void setUp( void )
 {
@@ -19,6 +20,71 @@ void test_dynstring_init( void )
     TEST_ASSERT_EQUAL( '\0', dstr.str[0] );
     TEST_ASSERT_EQUAL( 10, dstr.size );
     TEST_ASSERT_EQUAL( 0, dstr.length );
+}
+
+void test_dynstring_nfrom( void )
+{
+    const char *name = "Bentley";
+    DynString dname;
+    dynstring_nfrom( &dname, name, 7 );
+    TEST_ASSERT_EQUAL_STRING( name, dname.str );
+    TEST_ASSERT_EQUAL( 7, dname.length );
+    TEST_ASSERT_EQUAL( 8, dname.size );
+    dynstring_destroy( &dname );
+}
+
+void test_dynstring_npush0( void )
+{
+    dynstring_npush( &dstr, sentence, 9 );
+    TEST_ASSERT_EQUAL_STRING( "They look", dstr.str );
+    TEST_ASSERT_EQUAL( 9, dstr.length );
+    TEST_ASSERT_EQUAL( 10, dstr.size );
+
+    dynstring_npush( &dstr, sentence + 9, 33 );
+    TEST_ASSERT_EQUAL_STRING( "They looked up at the sky and saw a millio", dstr.str );
+    TEST_ASSERT_EQUAL( 42, dstr.length );
+    TEST_ASSERT_EQUAL( 80, dstr.size );
+
+    dynstring_npush( &dstr, sentence + 42, 7 );
+    TEST_ASSERT_EQUAL_STRING( "They looked up at the sky and saw a million stars", dstr.str );
+    TEST_ASSERT_EQUAL( 49, dstr.length );
+    TEST_ASSERT_EQUAL( 80, dstr.size );
+}
+
+void test_dynstring_npush1( void )
+{
+    dynstring_npush( &dstr, sentence, 5 );
+    TEST_ASSERT_EQUAL_STRING( "They ", dstr.str );
+    TEST_ASSERT_EQUAL( 5, dstr.length );
+    TEST_ASSERT_EQUAL( 10, dstr.size );
+
+    dynstring_npush( &dstr, sentence + 5, 34 );
+    TEST_ASSERT_EQUAL_STRING( "They looked up at the sky and saw a mil", dstr.str );
+    TEST_ASSERT_EQUAL( 39, dstr.length );
+    TEST_ASSERT_EQUAL( 40, dstr.size );
+
+    dynstring_npush( &dstr, sentence + 39, 10 );
+    TEST_ASSERT_EQUAL_STRING( "They looked up at the sky and saw a million stars", dstr.str );
+    TEST_ASSERT_EQUAL( 49, dstr.length );
+    TEST_ASSERT_EQUAL( 80, dstr.size );
+}
+
+void test_dynstring_npush2( void )
+{
+    dynstring_npush( &dstr, sentence, 5 );
+    TEST_ASSERT_EQUAL_STRING( "They ", dstr.str );
+    TEST_ASSERT_EQUAL( 5, dstr.length );
+    TEST_ASSERT_EQUAL( 10, dstr.size );
+
+    dynstring_npush( &dstr, sentence + 5, 35 );
+    TEST_ASSERT_EQUAL_STRING( "They looked up at the sky and saw a mill", dstr.str );
+    TEST_ASSERT_EQUAL( 40, dstr.length );
+    TEST_ASSERT_EQUAL( 80, dstr.size );
+
+    dynstring_npush( &dstr, sentence + 40, 9 );
+    TEST_ASSERT_EQUAL_STRING( "They looked up at the sky and saw a million stars", dstr.str );
+    TEST_ASSERT_EQUAL( 49, dstr.length );
+    TEST_ASSERT_EQUAL( 80, dstr.size );
 }
 
 // Test with EOF being read instantly
@@ -193,6 +259,10 @@ int main( void )
 {
     UNITY_BEGIN();
     RUN_TEST( test_dynstring_init );
+    RUN_TEST( test_dynstring_nfrom );
+    RUN_TEST( test_dynstring_npush0 );
+    RUN_TEST( test_dynstring_npush1 );
+    RUN_TEST( test_dynstring_npush2 );
     RUN_TEST( test_dynstring_readline_empty );
     RUN_TEST( test_dynstring_readline_no_resize );
     RUN_TEST( test_dynstring_readline_no_resize_newline );
