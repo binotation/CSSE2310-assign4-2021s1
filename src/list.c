@@ -128,26 +128,21 @@ void list_delete( ClientList *list, const char *name )
     }
 }
 
-/**
- *  Checks if a name is being used by an existing client.
- *  Params:
- *      root: linked list root node
- *      name: name to check
- *      listLock: lock for the clients' linked list
- *  Returns: true if the name is being used, false otherwise.
- **/
-// bool check_name_exists(ClientNode *root, char *name, pthread_mutex_t *listLock) {
-//     bool exists = false;
-//     pthread_mutex_lock(listLock);
+bool check_name_in_use( ClientList *list, const char *name )
+{
+    bool in_use = false;
+    pthread_mutex_lock( &list->lock );
 
-//     ClientNode *current = root->next;
-//     while (current != 0 && !exists) {
-//         exists = exists || !strcmp(current->data.name, name);
-//         current = current->next;
-//     }
-//     pthread_mutex_unlock(listLock);
-//     return exists;
-// }
+    ListNode *curr = list->head;
+    while( curr != 0 && !in_use )
+    {
+        in_use = in_use || !strcmp( curr->data.name, name );
+        curr = curr->next;
+    }
+
+    pthread_mutex_unlock( &list->lock );
+    return in_use;
+}
 
 /**
  *  Gets the client node for the corresponding client name.

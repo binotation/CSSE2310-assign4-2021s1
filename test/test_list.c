@@ -1,6 +1,15 @@
 #include "unity.h"
 #include "list.h"
 
+#define INSERT_DUMMY()										\
+{															\
+    pthread_mutex_t lock0, lock1, lock2, lock3;				\
+    list_insert( &list, names[1], (FILE*)1, &lock0 );		\
+    list_insert( &list, names[0], (FILE*)2, &lock1 );		\
+    list_insert( &list, names[2], (FILE*)3, &lock2 );		\
+    list_insert( &list, names[3], (FILE*)4, &lock3 );		\
+}
+
 // Test permutation of order of inserting names.
 #define TEST_INSERT( name0, name1, name2, name3 )											\
 {																							\
@@ -19,11 +28,7 @@
 // Test permutation of order of deleting names.
 #define TEST_DELETE( name0, name1, name2, name3, ord11, ord12, ord13, ord21, ord22, ord31 )	\
 {																							\
-    pthread_mutex_t lock0, lock1, lock2, lock3;												\
-    list_insert( &list, names[1], (FILE*)1, &lock0 );										\
-    list_insert( &list, names[0], (FILE*)2, &lock1 );										\
-    list_insert( &list, names[2], (FILE*)3, &lock2 );										\
-    list_insert( &list, names[3], (FILE*)4, &lock3 );										\
+    INSERT_DUMMY()																			\
 																							\
     list_delete( &list, names[name0] );														\
     TEST_ASSERT_EQUAL_STRING( names[ord11], list.head->data.name );							\
@@ -90,6 +95,7 @@ void test_delete_empty( void )
     list_delete( &list, names[1] );
     TEST_ASSERT_EQUAL( 0, list.head );
 }
+// Test every permutation of deleting 4 names.
 void test_delete0 ( void ) { TEST_DELETE( 0, 1, 2, 3, 1, 2, 3, 2, 3, 3 ) }
 void test_delete1 ( void ) { TEST_DELETE( 0, 1, 3, 2, 1, 2, 3, 2, 3, 2 ) }
 void test_delete2 ( void ) { TEST_DELETE( 0, 2, 1, 3, 1, 2, 3, 1, 3, 3 ) }
@@ -114,6 +120,16 @@ void test_delete20( void ) { TEST_DELETE( 3, 1, 0, 2, 0, 1, 2, 0, 2, 2 ) }
 void test_delete21( void ) { TEST_DELETE( 3, 1, 2, 0, 0, 1, 2, 0, 2, 0 ) }
 void test_delete22( void ) { TEST_DELETE( 3, 2, 0, 1, 0, 1, 2, 0, 1, 1 ) }
 void test_delete23( void ) { TEST_DELETE( 3, 2, 1, 0, 0, 1, 2, 0, 1, 0 ) }
+
+void test_in_use( void )
+{
+    INSERT_DUMMY()
+    TEST_ASSERT_TRUE( check_name_in_use( &list, names[0] ));
+    TEST_ASSERT_TRUE( check_name_in_use( &list, names[1] ));
+    TEST_ASSERT_TRUE( check_name_in_use( &list, names[2] ));
+    TEST_ASSERT_TRUE( check_name_in_use( &list, names[3] ));
+    TEST_ASSERT_FALSE( check_name_in_use( &list, "Kellan" ));
+}
 
 int main( void )
 {
@@ -170,6 +186,8 @@ int main( void )
     RUN_TEST( test_delete21 );
     RUN_TEST( test_delete22 );
     RUN_TEST( test_delete23 );
+
+    RUN_TEST( test_in_use );
 
     return UNITY_END();
 }

@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 // Data about a client
 typedef struct
@@ -62,7 +63,10 @@ void list_insert( ClientList *list, const char *name, FILE *tx, pthread_mutex_t 
  */
 void list_delete( ClientList *list, const char *name );
 
-// bool check_name_exists(ClientNode *root, char *name, pthread_mutex_t *listLock);
+/**
+ * Check if name is already being used by a client.
+ */
+bool check_name_in_use( ClientList *list, const char *name );
 
 // ClientNode *get_client_node(ClientNode *root, char *name, pthread_mutex_t *listLock);
 
