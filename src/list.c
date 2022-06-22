@@ -144,24 +144,19 @@ bool check_name_in_use( ClientList *list, const char *name )
     return in_use;
 }
 
-/**
- *  Gets the client node for the corresponding client name.
- *  Params:
- *      root: linked list root node
- *      name: name of client to get node for
- *      listLock: lock for the clients' linked list
- *  Returns: the client node for the client with name or NULL if not found.
- **/
-// ClientNode *get_client_node(ClientNode *root, char *name, pthread_mutex_t *listLock) {
-//     pthread_mutex_lock(listLock);
+ListNode *get_node( ClientList *list, const char *name )
+{
+    pthread_mutex_lock( &list->lock );
 
-//     ClientNode *current = root->next;
-//     while (current != 0 && strcmp(name, current->data.name)) {
-//         current = current->next;
-//     }
-//     pthread_mutex_unlock(listLock);
-//     return current;
-// }
+    ListNode *curr = list->head;
+    while( curr != 0 && strcmp( name, curr->data.name ))
+    {
+        curr = curr->next;
+    }
+
+    pthread_mutex_unlock( &list->lock );
+    return curr;
+}
 
 /**
  *  Increments a client's stat specified by char stat.

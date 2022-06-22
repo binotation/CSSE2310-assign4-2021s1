@@ -68,7 +68,10 @@ void list_delete( ClientList *list, const char *name );
  */
 bool check_name_in_use( ClientList *list, const char *name );
 
-// ClientNode *get_client_node(ClientNode *root, char *name, pthread_mutex_t *listLock);
+/**
+ * Retrieve a node reference identified by client name. If not found, NULL is returned.
+ */
+ListNode *get_node( ClientList *list, const char *name );
 
 // void inc_stat(ClientNode *node, char stat, pthread_mutex_t *listLock);
 

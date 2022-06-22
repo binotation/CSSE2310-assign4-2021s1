@@ -131,6 +131,16 @@ void test_in_use( void )
     TEST_ASSERT_FALSE( check_name_in_use( &list, "Kellan" ));
 }
 
+void test_get_node( void )
+{
+    INSERT_DUMMY()
+    TEST_ASSERT_EQUAL_STRING( names[0], get_node( &list, names[0] )->data.name );
+    TEST_ASSERT_EQUAL_STRING( names[1], get_node( &list, names[1] )->data.name );
+    TEST_ASSERT_EQUAL_STRING( names[2], get_node( &list, names[2] )->data.name );
+    TEST_ASSERT_EQUAL_STRING( names[3], get_node( &list, names[3] )->data.name );
+    TEST_ASSERT_EQUAL( 0, get_node( &list, "Kellan" ));
+}
+
 int main( void )
 {
     UNITY_BEGIN();
@@ -188,6 +198,7 @@ int main( void )
     RUN_TEST( test_delete23 );
 
     RUN_TEST( test_in_use );
+    RUN_TEST( test_get_node );
 
     return UNITY_END();
 }
