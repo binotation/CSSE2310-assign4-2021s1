@@ -1,5 +1,6 @@
 #include "unity.h"
 #include "list.h"
+#include "dynstring.h"
 
 #define INSERT_DUMMY()										\
 {															\
@@ -141,6 +142,83 @@ void test_get_node( void )
     TEST_ASSERT_EQUAL( 0, get_node( &list, "Kellan" ));
 }
 
+void test_inc_stat( void )
+{
+    INSERT_DUMMY()
+    ListNode *client = get_node( &list, names[2] );
+    TEST_ASSERT_EQUAL( 0, client->data.say );
+    TEST_ASSERT_EQUAL( 0, client->data.kick );
+    TEST_ASSERT_EQUAL( 0, client->data.list );
+
+    inc_stat( &list, client, 's' );
+    TEST_ASSERT_EQUAL( 1, client->data.say );
+    TEST_ASSERT_EQUAL( 0, client->data.kick );
+    TEST_ASSERT_EQUAL( 0, client->data.list );
+
+    inc_stat( &list, client, 'k' );
+    TEST_ASSERT_EQUAL( 1, client->data.say );
+    TEST_ASSERT_EQUAL( 1, client->data.kick );
+    TEST_ASSERT_EQUAL( 0, client->data.list );
+
+    inc_stat( &list, client, 'l' );
+    TEST_ASSERT_EQUAL( 1, client->data.say );
+    TEST_ASSERT_EQUAL( 1, client->data.kick );
+    TEST_ASSERT_EQUAL( 1, client->data.list );
+
+    inc_stat( &list, client, 'o' );
+    TEST_ASSERT_EQUAL( 1, client->data.say );
+    TEST_ASSERT_EQUAL( 1, client->data.kick );
+    TEST_ASSERT_EQUAL( 1, client->data.list );
+}
+
+void test_send_to_all( void )
+{
+    static const char *test_str = "He liked to play with words in the bathtub.";
+    DynString line;
+    dynstring_init( &line, 50 );
+
+    pthread_mutex_t lock0, lock1, lock2, lock3;
+    pthread_mutex_init( &lock0, 0 );
+    pthread_mutex_init( &lock1, 0 );
+    pthread_mutex_init( &lock2, 0 );
+    pthread_mutex_init( &lock3, 0 );
+    FILE *out0 = fopen( "build/test_send_to_all0.out", "w+" );
+    FILE *out1 = fopen( "build/test_send_to_all1.out", "w+" );
+    FILE *out2 = fopen( "build/test_send_to_all2.out", "w+" );
+    FILE *out3 = fopen( "build/test_send_to_all3.out", "w+" );
+
+    list_insert( &list, names[1], out1, &lock0 );
+    list_insert( &list, names[0], out0, &lock1 );
+    list_insert( &list, names[2], out2, &lock2 );
+    list_insert( &list, names[3], out3, &lock3 );
+
+    send_to_all( &list, test_str );
+
+    rewind( out0 );
+    rewind( out1 );
+    rewind( out2 );
+    rewind( out3 );
+
+    dynstring_readline( &line, out0 );
+    TEST_ASSERT_EQUAL_STRING( test_str, line.str );
+    dynstring_readline( &line, out1 );
+    TEST_ASSERT_EQUAL_STRING( test_str, line.str );
+    dynstring_readline( &line, out2 );
+    TEST_ASSERT_EQUAL_STRING( test_str, line.str );
+    dynstring_readline( &line, out3 );
+    TEST_ASSERT_EQUAL_STRING( test_str, line.str );
+
+    fclose( out3 );
+    fclose( out2 );
+    fclose( out1 );
+    fclose( out0 );
+    pthread_mutex_destroy( &lock3 );
+    pthread_mutex_destroy( &lock2 );
+    pthread_mutex_destroy( &lock1 );
+    pthread_mutex_destroy( &lock0 );
+    dynstring_destroy( &line );
+}
+
 int main( void )
 {
     UNITY_BEGIN();
@@ -199,6 +277,8 @@ int main( void )
 
     RUN_TEST( test_in_use );
     RUN_TEST( test_get_node );
+    RUN_TEST( test_inc_stat );
+    RUN_TEST( test_send_to_all );
 
     return UNITY_END();
 }

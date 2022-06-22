@@ -73,9 +73,16 @@ bool check_name_in_use( ClientList *list, const char *name );
  */
 ListNode *get_node( ClientList *list, const char *name );
 
-// void inc_stat(ClientNode *node, char stat, pthread_mutex_t *listLock);
+/**
+ * Increment a client's stat given its node.
+ * @param stat	the stat to increment: 's' -> SAY:, 'k' -> KICK:, 'l' -> LIST:
+ */
+void inc_stat( ClientList *list, ListNode *client, const char stat );
 
-// void send_to_all(ClientNode *root, const char *cmd, pthread_mutex_t *listLock);
+/**
+ * Send str to all clients.
+ */
+void send_to_all( ClientList *list, const char *str );
 
 // char *get_names_list(ClientNode *root, pthread_mutex_t *listLock);
 

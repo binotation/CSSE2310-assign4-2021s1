@@ -158,48 +158,42 @@ ListNode *get_node( ClientList *list, const char *name )
     return curr;
 }
 
-/**
- *  Increments a client's stat specified by char stat.
- *  Params: 
- *      node: the client's node
- *      stat: the stat to increment - 's' for SAY:, 'k' for KICK:, 
- *      'l' for LIST:
- *      listLock: lock for the clients' linked list
- **/
-// void inc_stat(ClientNode *node, char stat, pthread_mutex_t *listLock) {
-//     pthread_mutex_lock(listLock);
-//     if (stat == 's') {
-//         node->data.say++;
-//     } else if (stat == 'k') {
-//         node->data.kick++;
-//     } else if (stat == 'l') {
-//         node->data.list++;
-//     }
-//     pthread_mutex_unlock(listLock);
-// }
+void inc_stat( ClientList *list, ListNode *client, const char stat )
+{
+    pthread_mutex_lock( &list->lock );
+    switch( stat )
+    {
+        case 's':
+            client->data.say++;
+            break;
+        case 'k':
+            client->data.kick++;
+            break;
+        case 'l':
+            client->data.list++;
+    }
+    pthread_mutex_unlock( &list->lock );
+}
 
-/**
- *  Sends a command string to all clients.
- *  Params:
- *      root: linked list root node
- *      cmd: command to send
- *      listLock: lock for the clients' linked list
- **/
-// void send_to_all(ClientNode *root, const char *cmd, pthread_mutex_t *listLock) {
-//     pthread_mutex_lock(listLock);
+// Avoid deadlock by ensuring nothing holds a tx_lock while trying to lock a list->lock.
+void send_to_all( ClientList *list, const char *str )
+{
+    pthread_mutex_lock( &list->lock );
 
-//     ClientNode *current = root->next;
-//     while (current != 0) {
-//         pthread_mutex_lock(current->data.toLock);
-//         // send
-//         fputs(cmd, current->data.to);
-//         fflush(current->data.to);
+    ListNode *curr = list->head;
+    while( curr != 0 )
+    {
+        pthread_mutex_lock( curr->data.tx_lock );
 
-//         pthread_mutex_unlock(current->data.toLock);
-//         current = current->next;
-//     }
-//     pthread_mutex_unlock(listLock);
-// }
+        fputs( str, curr->data.tx );
+        fflush( curr->data.tx );
+
+        pthread_mutex_unlock( curr->data.tx_lock );
+        curr = curr->next;
+    }
+
+    pthread_mutex_unlock( &list->lock );
+}
 
 /**
  *  Get a list of client names.
