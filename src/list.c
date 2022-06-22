@@ -4,22 +4,22 @@
 #include <strings.h>
 
 // If curr is tail -> append, else if ordered -> insert.
-#define INSERT_NODE( prev_next, curr )					\
-{														\
-    if( curr == 0 )										\
-    {													\
-        prev_next = new_node;							\
-        new_node->next = 0; /* God bless valgrind */	\
-        pthread_mutex_unlock( &list->lock );			\
-        return;											\
-    }													\
-    else if( strcasecmp( name, curr->data.name ) <= 0 )	\
-    {													\
-        new_node->next = curr;							\
-        prev_next = new_node;							\
-        pthread_mutex_unlock( &list->lock );			\
-        return;											\
-    }													\
+#define INSERT_NODE( prev_next, curr )								\
+{																	\
+    if( curr == 0 )													\
+    {																\
+        prev_next = new_node;										\
+        new_node->next = 0; /* God bless valgrind */				\
+        pthread_mutex_unlock( &list->lock );						\
+        return;														\
+    }																\
+    else if( strcasecmp( name->str, curr->data.name->str ) <= 0 )	\
+    {																\
+        new_node->next = curr;										\
+        prev_next = new_node;										\
+        pthread_mutex_unlock( &list->lock );						\
+        return;														\
+    }																\
 }
 
 #define DELETE_NODE( prev_next, curr_next, target )	\
@@ -63,7 +63,7 @@ void list_destroy( ClientList *list )
     pthread_mutex_destroy( &list->lock );
 }
 
-void list_insert( ClientList *list, const char *name, FILE *tx, pthread_mutex_t *tx_lock )
+void list_insert( ClientList *list, const DynString *name, FILE *tx, pthread_mutex_t *tx_lock )
 {
     // Create new node
     ListNode *new_node = malloc( sizeof(ListNode) );
@@ -102,7 +102,7 @@ void list_delete( ClientList *list, const char *name )
         pthread_mutex_unlock( &list->lock );
         return;
     }
-    else if( !strcmp( name, list->head->data.name ))
+    else if( !strcmp( name, list->head->data.name->str ))
     {
         target = list->head;
         DELETE_NODE( list->head, list->head->next, target )
@@ -118,7 +118,7 @@ void list_delete( ClientList *list, const char *name )
                 pthread_mutex_unlock( &list->lock );
                 return;
             }
-            else if( !strcmp( name, curr->data.name ))
+            else if( !strcmp( name, curr->data.name->str ))
             {
                 DELETE_NODE( prev->next, curr->next, curr )
             }
@@ -136,7 +136,7 @@ bool check_name_in_use( ClientList *list, const char *name )
     ListNode *curr = list->head;
     while( curr != 0 && !in_use )
     {
-        in_use = in_use || !strcmp( curr->data.name, name );
+        in_use = in_use || !strcmp( curr->data.name->str, name );
         curr = curr->next;
     }
 
@@ -149,7 +149,7 @@ ListNode *get_node( ClientList *list, const char *name )
     pthread_mutex_lock( &list->lock );
 
     ListNode *curr = list->head;
-    while( curr != 0 && strcmp( name, curr->data.name ))
+    while( curr != 0 && strcmp( name, curr->data.name->str ))
     {
         curr = curr->next;
     }
@@ -195,20 +195,14 @@ void send_to_all( ClientList *list, const char *str )
     pthread_mutex_unlock( &list->lock );
 }
 
-/**
- *  Get a list of client names.
- *  Params:
- *      root: linked list root node
- *      listLock: lock for the clients' linked list
- *  Returns: a list of client names as a string.
- **/
-// char *get_names_list(ClientNode *root, pthread_mutex_t *listLock) {
+// char *get_names_list( ClientList *list )
+// {
 //     int nameLength;
 //     // String for list of names e.g. name1,name2,name3
 //     String names;
 //     memset(&names, 0, sizeof(String));
 
-//     pthread_mutex_lock(listLock);
+//     pthread_mutex_lock( &list->lock );
 
 //     ClientNode *current = root->next;
 //     while (current != 0) {
@@ -222,7 +216,7 @@ void send_to_all( ClientList *list, const char *str )
 //         names.chars[names.length - 1] = ',';
 //         current = current->next;
 //     }
-//     pthread_mutex_unlock(listLock);
+//     pthread_mutex_unlock( &list->lock );
 //     // replace last comma with null terminator
 //     names.chars[names.length - 1] = '\0';
 //     return names.chars;

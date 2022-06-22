@@ -11,6 +11,7 @@
 #ifndef LIST_H
 #define LIST_H
 
+#include "dynstring.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -18,7 +19,7 @@
 // Data about a client
 typedef struct
 {
-    const char *name;
+    const DynString *name;
     FILE *tx;
     pthread_mutex_t *tx_lock;
 
@@ -56,7 +57,7 @@ void list_destroy( ClientList *list );
 /**
  * Insert a new client into a list.
  */
-void list_insert( ClientList *list, const char *name, FILE *tx, pthread_mutex_t *tx_lock );
+void list_insert( ClientList *list, const DynString *name, FILE *tx, pthread_mutex_t *tx_lock );
 
 /**
  * Delete a client identified by name.
@@ -84,7 +85,10 @@ void inc_stat( ClientList *list, ListNode *client, const char stat );
  */
 void send_to_all( ClientList *list, const char *str );
 
-// char *get_names_list(ClientNode *root, pthread_mutex_t *listLock);
+/**
+ * Get a list of client names as a dynstring in comma-separated format. E.g. "name1,name2,name3".
+ */
+void get_names_list( ClientList *list, DynString *names );
 
 // void show_clients_stats(ClientNode *root, pthread_mutex_t *listLock);
 

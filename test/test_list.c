@@ -5,25 +5,25 @@
 #define INSERT_DUMMY()										\
 {															\
     pthread_mutex_t lock0, lock1, lock2, lock3;				\
-    list_insert( &list, names[1], (FILE*)1, &lock0 );		\
-    list_insert( &list, names[0], (FILE*)2, &lock1 );		\
-    list_insert( &list, names[2], (FILE*)3, &lock2 );		\
-    list_insert( &list, names[3], (FILE*)4, &lock3 );		\
+    list_insert( &list, &names[1], (FILE*)1, &lock0 );		\
+    list_insert( &list, &names[0], (FILE*)2, &lock1 );		\
+    list_insert( &list, &names[2], (FILE*)3, &lock2 );		\
+    list_insert( &list, &names[3], (FILE*)4, &lock3 );		\
 }
 
 // Test permutation of order of inserting names.
 #define TEST_INSERT( name0, name1, name2, name3 )											\
 {																							\
     pthread_mutex_t lock0, lock1, lock2, lock3;												\
-    list_insert( &list, names[name0], (FILE*)1, &lock0 );									\
-    list_insert( &list, names[name1], (FILE*)2, &lock1 );									\
-    list_insert( &list, names[name2], (FILE*)3, &lock2 );									\
-    list_insert( &list, names[name3], (FILE*)4, &lock3 );									\
+    list_insert( &list, &names[name0], (FILE*)1, &lock0 );									\
+    list_insert( &list, &names[name1], (FILE*)2, &lock1 );									\
+    list_insert( &list, &names[name2], (FILE*)3, &lock2 );									\
+    list_insert( &list, &names[name3], (FILE*)4, &lock3 );									\
 																							\
-    TEST_ASSERT_EQUAL_STRING( names[0], list.head->data.name );								\
-    TEST_ASSERT_EQUAL_STRING( names[1], list.head->next->data.name );						\
-    TEST_ASSERT_EQUAL_STRING( names[2], list.head->next->next->data.name );					\
-    TEST_ASSERT_EQUAL_STRING( names[3], list.head->next->next->next->data.name );			\
+    TEST_ASSERT_EQUAL_STRING( names[0].str, list.head->data.name->str );					\
+    TEST_ASSERT_EQUAL_STRING( names[1].str, list.head->next->data.name->str );				\
+    TEST_ASSERT_EQUAL_STRING( names[2].str, list.head->next->next->data.name->str );		\
+    TEST_ASSERT_EQUAL_STRING( names[3].str, list.head->next->next->next->data.name->str );	\
 }
 
 // Test permutation of order of deleting names.
@@ -31,24 +31,24 @@
 {																							\
     INSERT_DUMMY()																			\
 																							\
-    list_delete( &list, names[name0] );														\
-    TEST_ASSERT_EQUAL_STRING( names[ord11], list.head->data.name );							\
-    TEST_ASSERT_EQUAL_STRING( names[ord12], list.head->next->data.name );					\
-    TEST_ASSERT_EQUAL_STRING( names[ord13], list.head->next->next->data.name );				\
+    list_delete( &list, names[name0].str );													\
+    TEST_ASSERT_EQUAL_STRING( names[ord11].str, list.head->data.name->str );				\
+    TEST_ASSERT_EQUAL_STRING( names[ord12].str, list.head->next->data.name->str );			\
+    TEST_ASSERT_EQUAL_STRING( names[ord13].str, list.head->next->next->data.name->str );	\
 																							\
-    list_delete( &list, names[name1] );														\
-    TEST_ASSERT_EQUAL_STRING( names[ord21], list.head->data.name );							\
-    TEST_ASSERT_EQUAL_STRING( names[ord22], list.head->next->data.name );					\
+    list_delete( &list, names[name1].str );													\
+    TEST_ASSERT_EQUAL_STRING( names[ord21].str, list.head->data.name->str );				\
+    TEST_ASSERT_EQUAL_STRING( names[ord22].str, list.head->next->data.name->str );			\
 																							\
-    list_delete( &list, names[name2] );														\
-    TEST_ASSERT_EQUAL_STRING( names[ord31], list.head->data.name );							\
+    list_delete( &list, names[name2].str );													\
+    TEST_ASSERT_EQUAL_STRING( names[ord31].str, list.head->data.name->str );				\
 																							\
-    list_delete( &list, names[name3] );														\
+    list_delete( &list, names[name3].str );													\
     TEST_ASSERT_EQUAL( 0, list.head );														\
 }
 
 static ClientList list;
-static const char *names[4] = { "Clementine", "Kingston", "Nannie", "Vicki" };
+static DynString names[4];
 
 void setUp( void )
 {
@@ -93,7 +93,7 @@ void test_insert23( void ) { TEST_INSERT( 3, 2, 1, 0 ) }
 
 void test_delete_empty( void )
 {
-    list_delete( &list, names[1] );
+    list_delete( &list, names[1].str );
     TEST_ASSERT_EQUAL( 0, list.head );
 }
 // Test every permutation of deleting 4 names.
@@ -125,27 +125,27 @@ void test_delete23( void ) { TEST_DELETE( 3, 2, 1, 0, 0, 1, 2, 0, 1, 0 ) }
 void test_in_use( void )
 {
     INSERT_DUMMY()
-    TEST_ASSERT_TRUE( check_name_in_use( &list, names[0] ));
-    TEST_ASSERT_TRUE( check_name_in_use( &list, names[1] ));
-    TEST_ASSERT_TRUE( check_name_in_use( &list, names[2] ));
-    TEST_ASSERT_TRUE( check_name_in_use( &list, names[3] ));
+    TEST_ASSERT_TRUE( check_name_in_use( &list, names[0].str ));
+    TEST_ASSERT_TRUE( check_name_in_use( &list, names[1].str ));
+    TEST_ASSERT_TRUE( check_name_in_use( &list, names[2].str ));
+    TEST_ASSERT_TRUE( check_name_in_use( &list, names[3].str ));
     TEST_ASSERT_FALSE( check_name_in_use( &list, "Kellan" ));
 }
 
 void test_get_node( void )
 {
     INSERT_DUMMY()
-    TEST_ASSERT_EQUAL_STRING( names[0], get_node( &list, names[0] )->data.name );
-    TEST_ASSERT_EQUAL_STRING( names[1], get_node( &list, names[1] )->data.name );
-    TEST_ASSERT_EQUAL_STRING( names[2], get_node( &list, names[2] )->data.name );
-    TEST_ASSERT_EQUAL_STRING( names[3], get_node( &list, names[3] )->data.name );
+    TEST_ASSERT_EQUAL_STRING( names[0].str, get_node( &list, names[0].str )->data.name->str );
+    TEST_ASSERT_EQUAL_STRING( names[1].str, get_node( &list, names[1].str )->data.name->str );
+    TEST_ASSERT_EQUAL_STRING( names[2].str, get_node( &list, names[2].str )->data.name->str );
+    TEST_ASSERT_EQUAL_STRING( names[3].str, get_node( &list, names[3].str )->data.name->str );
     TEST_ASSERT_EQUAL( 0, get_node( &list, "Kellan" ));
 }
 
 void test_inc_stat( void )
 {
     INSERT_DUMMY()
-    ListNode *client = get_node( &list, names[2] );
+    ListNode *client = get_node( &list, names[2].str );
     TEST_ASSERT_EQUAL( 0, client->data.say );
     TEST_ASSERT_EQUAL( 0, client->data.kick );
     TEST_ASSERT_EQUAL( 0, client->data.list );
@@ -187,10 +187,10 @@ void test_send_to_all( void )
     FILE *out2 = fopen( "build/test_send_to_all2.out", "w+" );
     FILE *out3 = fopen( "build/test_send_to_all3.out", "w+" );
 
-    list_insert( &list, names[1], out1, &lock0 );
-    list_insert( &list, names[0], out0, &lock1 );
-    list_insert( &list, names[2], out2, &lock2 );
-    list_insert( &list, names[3], out3, &lock3 );
+    list_insert( &list, &names[1], out1, &lock0 );
+    list_insert( &list, &names[0], out0, &lock1 );
+    list_insert( &list, &names[2], out2, &lock2 );
+    list_insert( &list, &names[3], out3, &lock3 );
 
     send_to_all( &list, test_str );
 
@@ -222,6 +222,12 @@ void test_send_to_all( void )
 int main( void )
 {
     UNITY_BEGIN();
+
+    dynstring_nfrom( &names[0], "Clementine", 10 );
+    dynstring_nfrom( &names[1], "Kingston", 8 );
+    dynstring_nfrom( &names[2], "Nannie", 6 );
+    dynstring_nfrom( &names[3], "Vicki", 5 );
+
     RUN_TEST( test_init );
 
     RUN_TEST( test_insert0 );
@@ -279,6 +285,11 @@ int main( void )
     RUN_TEST( test_get_node );
     RUN_TEST( test_inc_stat );
     RUN_TEST( test_send_to_all );
+
+    dynstring_destroy( &names[3] );
+    dynstring_destroy( &names[2] );
+    dynstring_destroy( &names[1] );
+    dynstring_destroy( &names[0] );
 
     return UNITY_END();
 }
