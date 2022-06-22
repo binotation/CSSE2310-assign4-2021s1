@@ -44,6 +44,11 @@ void dynstring_nfrom( DynString *dstr, const char *str, unsigned int length );
 void dynstring_destroy( DynString *dstr );
 
 /**
+ * Truncate dynstring to 0.
+ */
+void dynstring_clear( DynString *dstr );
+
+/**
  * Append str of length to dstr.
  * @param length	length of str excluding NULL terminator
  */

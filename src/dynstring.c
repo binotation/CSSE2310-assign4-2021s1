@@ -25,6 +25,12 @@ void dynstring_destroy( DynString *dstr )
     free( dstr->str );
 }
 
+void dynstring_clear( DynString *dstr )
+{
+    dstr->length = 0;
+    dstr->str[0] = '\0';
+}
+
 void dynstring_npush( DynString *dstr, const char *str, unsigned int length )
 {
     if( dstr->length + length + 1 > dstr->size )
@@ -40,8 +46,7 @@ void dynstring_npush( DynString *dstr, const char *str, unsigned int length )
 
 enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
 {
-    dstr->length = 0;
-    dstr->str[0] = '\0';
+    dynstring_clear( dstr );
     char *s;
     unsigned int count = 0;				// Number of iterations
     unsigned int num;					// Number of chars read in the current iteration
