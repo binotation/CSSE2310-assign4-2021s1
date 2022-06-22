@@ -1,23 +1,19 @@
 #include "unity.h"
 #include "list.h"
 
-#define ASSERT_LIST()																		\
+// Test permutation of order of inserting names.
+#define TEST_INSERT( name0, name1, name2, name3 )											\
 {																							\
+    pthread_mutex_t lock0, lock1, lock2, lock3;												\
+    list_insert( &list, names[name0], (FILE*)1, &lock0 );									\
+    list_insert( &list, names[name1], (FILE*)2, &lock1 );									\
+    list_insert( &list, names[name2], (FILE*)3, &lock2 );									\
+    list_insert( &list, names[name3], (FILE*)4, &lock3 );									\
+																							\
     TEST_ASSERT_EQUAL_STRING( names[0], list.head->data.name );								\
     TEST_ASSERT_EQUAL_STRING( names[1], list.head->next->data.name );						\
     TEST_ASSERT_EQUAL_STRING( names[2], list.head->next->next->data.name );					\
     TEST_ASSERT_EQUAL_STRING( names[3], list.head->next->next->next->data.name );			\
-}
-
-// Test permutation of order of inserting names.
-#define TEST_INSERT( name0, name1, name2, name3 )				\
-{																\
-    pthread_mutex_t lock0, lock1, lock2, lock3;					\
-    list_insert( &list, names[name0], (FILE*)1, &lock0 );		\
-    list_insert( &list, names[name1], (FILE*)2, &lock1 );		\
-    list_insert( &list, names[name2], (FILE*)3, &lock2 );		\
-    list_insert( &list, names[name3], (FILE*)4, &lock3 );		\
-    ASSERT_LIST()												\
 }
 
 // Test permutation of order of deleting names.
