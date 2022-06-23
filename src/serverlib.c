@@ -2,6 +2,20 @@
 #include <string.h>
 #include <netdb.h>
 
+void received_stats_init( ReceivedStats *received_stats )
+{
+    *received_stats = (ReceivedStats)
+    {
+        .auth	= 0,
+        .name	= 0,
+        .say	= 0,
+        .kick	= 0,
+        .list	= 0,
+        .leave	= 0,
+    };
+    pthread_mutex_init( &received_stats->lock, 0 );
+}
+
 enum GetArgsResult get_args( Args *args, int argc, char **argv )
 {
     FILE *authfile;

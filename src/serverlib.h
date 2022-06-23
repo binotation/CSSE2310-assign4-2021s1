@@ -2,6 +2,7 @@
 #define SERVERLIB_H
 
 #include "dynstring.h"
+#include <pthread.h>
 
 #define USAGE "Usage: server authfile [port]\n"
 #define AUTHFILE_ERR_MSG "Authfile error\n"
@@ -35,6 +36,29 @@ enum GetSockResult
     GET_SOCK_PORT_INVALID,
     GET_SOCK_COMM_ERR,
 };
+
+// Number of times each command has been received.
+typedef struct
+{
+    pthread_mutex_t lock;
+    unsigned int auth;
+    unsigned int name;
+    unsigned int say;
+    unsigned int kick;
+    unsigned int list;
+    unsigned int leave;
+} ReceivedStats;
+
+// Type of command received.
+enum ReceivedType
+{
+    AUTH, NAME, SAY, KICK, LIST, LEAVE,
+};
+
+/**
+ * Initialize ReceivedStats.
+ */
+void received_stats_init( ReceivedStats *received_stats );
 
 /**
  * Get args from argv.

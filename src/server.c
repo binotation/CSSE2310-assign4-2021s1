@@ -3,21 +3,6 @@
 #include <unistd.h>
 #include <signal.h>
 
-/* The server's number of commands received stats. */
-typedef struct {
-    int auth;
-    int name;
-    int say;
-    int kick;
-    int list;
-    int leave;
-} Received;
-
-/* Types of commands that can be received by the server. */
-typedef enum {
-    AUTH, NAME, SAY, KICK, LIST, LEAVE
-} ReceivedType;
-
 /* Arg for signal handler routine. */
 // typedef struct {
 //     Received *received; // received stats
@@ -503,15 +488,15 @@ int main( int argc, char **argv )
             fprintf( stderr, "%u\n", port );
     }
 
-    // // initialise received stats, clients list and locks
-    // Received *received = (Received*)calloc(1, sizeof(Received));
-    // ClientNode *clients = (ClientNode*)calloc(1, sizeof(ClientNode));
-    // pthread_mutex_t receivedLock;
-    // pthread_mutex_t clientsLock;
-    // pthread_mutex_init(&receivedLock, 0);
-    // pthread_mutex_init(&clientsLock, 0);
-    // // set up sig handler thread
-    // SigHandlerArg sigHandlerArg = {
+    // Initialize clients list and received stats
+    ClientList list;
+    ReceivedStats stats;
+    list_init( &list );
+    received_stats_init( &stats );
+
+    // set up sig handler thread
+    // SigHandlerArg sigHandlerArg =
+    // {
     //     .received = received,
     //     .clients = clients,
     //     .receivedLock = &receivedLock,

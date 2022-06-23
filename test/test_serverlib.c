@@ -69,6 +69,26 @@ void test_get_listening_socket_port_taken( void )
     TEST_ASSERT_EQUAL( GET_SOCK_COMM_ERR, get_sock_res );
 }
 
+void test_received_stats_init( void )
+{
+    ReceivedStats stats =
+    {
+        .auth	= 2,
+        .name	= 2,
+        .say	= 2,
+        .kick	= 2,
+        .list	= 2,
+        .leave	= 2,
+    };
+    received_stats_init( &stats );
+    TEST_ASSERT_EQUAL( 0, stats.auth );
+    TEST_ASSERT_EQUAL( 0, stats.name );
+    TEST_ASSERT_EQUAL( 0, stats.say );
+    TEST_ASSERT_EQUAL( 0, stats.kick );
+    TEST_ASSERT_EQUAL( 0, stats.list );
+    TEST_ASSERT_EQUAL( 0, stats.leave );
+}
+
 int main( void )
 {
     UNITY_BEGIN();
@@ -80,6 +100,7 @@ int main( void )
     RUN_TEST( test_get_listening_socket );
     RUN_TEST( test_get_listening_socket_invalid_port );
     RUN_TEST( test_get_listening_socket_port_taken );
+    RUN_TEST( test_received_stats_init );
 
     return UNITY_END();
 }
