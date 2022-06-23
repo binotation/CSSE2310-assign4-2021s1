@@ -218,7 +218,7 @@ void list_print_stats( ClientList *list )
     ListNode *curr = list->head;
     while( curr != 0 )
     {
-        fprintf( stderr, "%s:SAY:%d:KICK:%d:LIST:%d\n",
+        fprintf( stderr, "%s:SAY:%u:KICK:%u:LIST:%u\n",
             curr->data.name->str, curr->data.say, curr->data.kick, curr->data.list );
         curr = curr->next;
     }
