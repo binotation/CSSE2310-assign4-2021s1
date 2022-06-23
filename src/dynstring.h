@@ -55,6 +55,16 @@ void dynstring_clear( DynString *dstr );
 void dynstring_npush( DynString *dstr, const char *str, unsigned int length );
 
 /**
+ * Append char to dstr.
+ */
+void dynstring_pushc( DynString *dstr, char c );
+
+/**
+ * Remove and return last char of dstr.
+ */
+char dynstring_popc( DynString *dstr );
+
+/**
  * Read a line from a file stream excluding the newline.
  * @returns if EOF was reached, error occurred or success
  */

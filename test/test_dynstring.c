@@ -87,6 +87,53 @@ void test_dynstring_npush2( void )
     TEST_ASSERT_EQUAL( 80, dstr.size );
 }
 
+void test_dynstring_pushc( void )
+{
+    dynstring_npush( &dstr, "It's no", 7 );
+    dynstring_pushc( &dstr, 't' );
+    TEST_ASSERT_EQUAL_STRING( "It's not", dstr.str );
+    TEST_ASSERT_EQUAL( 8, dstr.length );
+    TEST_ASSERT_EQUAL( 10, dstr.size );
+
+    dynstring_pushc( &dstr, ' ' );
+    TEST_ASSERT_EQUAL_STRING( "It's not ", dstr.str );
+    TEST_ASSERT_EQUAL( 9, dstr.length );
+    TEST_ASSERT_EQUAL( 10, dstr.size );
+
+    dynstring_pushc( &dstr, 'o' );
+    TEST_ASSERT_EQUAL_STRING( "It's not o", dstr.str );
+    TEST_ASSERT_EQUAL( 10, dstr.length );
+    TEST_ASSERT_EQUAL( 20, dstr.size );
+
+    dynstring_pushc( &dstr, 'f' );
+    TEST_ASSERT_EQUAL_STRING( "It's not of", dstr.str );
+    TEST_ASSERT_EQUAL( 11, dstr.length );
+    TEST_ASSERT_EQUAL( 20, dstr.size );
+}
+
+void test_dynstring_popc( void )
+{
+    char c;
+    dynstring_npush( &dstr, "It", 2 );
+    c = dynstring_popc( &dstr );
+    TEST_ASSERT_EQUAL( 't', c );
+    TEST_ASSERT_EQUAL_STRING( "I", dstr.str );
+    TEST_ASSERT_EQUAL( 1, dstr.length );
+    TEST_ASSERT_EQUAL( 10, dstr.size );
+
+    c = dynstring_popc( &dstr );
+    TEST_ASSERT_EQUAL( 'I', c );
+    TEST_ASSERT_EQUAL_STRING( "", dstr.str );
+    TEST_ASSERT_EQUAL( 0, dstr.length );
+    TEST_ASSERT_EQUAL( 10, dstr.size );
+
+    c = dynstring_popc( &dstr );
+    TEST_ASSERT_EQUAL( '\0', c );
+    TEST_ASSERT_EQUAL_STRING( "", dstr.str );
+    TEST_ASSERT_EQUAL( 0, dstr.length );
+    TEST_ASSERT_EQUAL( 10, dstr.size );
+}
+
 // Test with EOF being read instantly
 void test_dynstring_readline_empty( void )
 {
@@ -263,6 +310,8 @@ int main( void )
     RUN_TEST( test_dynstring_npush0 );
     RUN_TEST( test_dynstring_npush1 );
     RUN_TEST( test_dynstring_npush2 );
+    RUN_TEST( test_dynstring_pushc );
+    RUN_TEST( test_dynstring_popc );
     RUN_TEST( test_dynstring_readline_empty );
     RUN_TEST( test_dynstring_readline_no_resize );
     RUN_TEST( test_dynstring_readline_no_resize_newline );

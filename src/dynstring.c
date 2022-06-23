@@ -44,6 +44,24 @@ void dynstring_npush( DynString *dstr, const char *str, unsigned int length )
     dstr->str[ dstr->length += length ] = '\0';
 }
 
+void dynstring_pushc( DynString *dstr, char c )
+{
+    if( dstr->length + 2 > dstr->size )
+    {
+        dstr->str = realloc( dstr->str, sizeof(char) * ( dstr->size <<= 1 ));
+    }
+    dstr->str[ dstr->length++ ] = c;
+    dstr->str[ dstr->length ] = '\0';
+}
+
+char dynstring_popc( DynString *dstr )
+{
+    if( dstr->length == 0 ) return '\0';
+    char c = dstr->str[ --dstr->length ];
+    dstr->str[ dstr->length ] = '\0';
+    return c;
+}
+
 enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
 {
     dynstring_clear( dstr );
