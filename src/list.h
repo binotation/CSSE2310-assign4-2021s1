@@ -86,7 +86,7 @@ void inc_stat( ClientList *list, ListNode *client, const char stat );
 void send_to_all( ClientList *list, const char *str );
 
 /**
- * Get a list of client names as a dynstring in comma-separated format. E.g. "name1,name2,name3".
+ * Get a list of client names as a dynstring in comma-separated format, e.g. "name1,name2,name3".
  */
 void get_names_list( ClientList *list, DynString *names );
 

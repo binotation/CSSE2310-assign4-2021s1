@@ -195,32 +195,21 @@ void send_to_all( ClientList *list, const char *str )
     pthread_mutex_unlock( &list->lock );
 }
 
-// char *get_names_list( ClientList *list )
-// {
-//     int nameLength;
-//     // String for list of names e.g. name1,name2,name3
-//     String names;
-//     memset(&names, 0, sizeof(String));
+void get_names_list( ClientList *list, DynString *names )
+{
+    dynstring_clear( names );
+    pthread_mutex_lock( &list->lock );
 
-//     pthread_mutex_lock( &list->lock );
-
-//     ClientNode *current = root->next;
-//     while (current != 0) {
-//         nameLength = strlen(current->data.name);
-//         // allocate memory for name and comma
-//         names.chars = (char*)realloc(names.chars, sizeof(char) * (names.size += nameLength + 1));
-
-//         strncpy(names.chars + names.length, current->data.name, nameLength);
-//         // update length including comma
-//         names.length += nameLength + 1;
-//         names.chars[names.length - 1] = ',';
-//         current = current->next;
-//     }
-//     pthread_mutex_unlock( &list->lock );
-//     // replace last comma with null terminator
-//     names.chars[names.length - 1] = '\0';
-//     return names.chars;
-// }
+    ListNode *curr = list->head;
+    while( curr != 0 )
+    {
+        dynstring_npush( names, curr->data.name->str, curr->data.name->length );
+        dynstring_pushc( names, ',' );
+        curr = curr->next;
+    }
+    pthread_mutex_unlock( &list->lock );
+    dynstring_popc( names );
+}
 
 /**
  *  Prints each clients stats to stderr. e.g. clientName:SAY:5:KICK:2:LIST:3 .

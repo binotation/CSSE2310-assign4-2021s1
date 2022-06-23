@@ -219,6 +219,33 @@ void test_send_to_all( void )
     dynstring_destroy( &line );
 }
 
+void test_get_names_list0( void )
+{
+    DynString names;
+    dynstring_init( &names, 10 );
+
+    get_names_list( &list, &names );
+    TEST_ASSERT_EQUAL_STRING( "", names.str );
+    TEST_ASSERT_EQUAL( 0, names.length );
+    TEST_ASSERT_EQUAL( 10, names.size );
+
+    dynstring_destroy( &names );
+}
+
+void test_get_names_list1( void )
+{
+    INSERT_DUMMY()
+    DynString names;
+    dynstring_init( &names, 10 );
+
+    get_names_list( &list, &names );
+    TEST_ASSERT_EQUAL_STRING( "Clementine,Kingston,Nannie,Vicki", names.str );
+    TEST_ASSERT_EQUAL( 32, names.length );
+    TEST_ASSERT_EQUAL( 40, names.size );
+
+    dynstring_destroy( &names );
+}
+
 int main( void )
 {
     UNITY_BEGIN();
@@ -285,6 +312,8 @@ int main( void )
     RUN_TEST( test_get_node );
     RUN_TEST( test_inc_stat );
     RUN_TEST( test_send_to_all );
+    RUN_TEST( test_get_names_list0 );
+    RUN_TEST( test_get_names_list1 );
 
     dynstring_destroy( &names[3] );
     dynstring_destroy( &names[2] );
