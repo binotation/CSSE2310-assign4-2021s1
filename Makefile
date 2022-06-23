@@ -33,6 +33,7 @@ clean:
 
 debug: CFLAGS += -g
 debug: client server
+target: CFLAGS += -O3
 target: client server
 
 client: $(OBJ)/client.o $(OBJ)/clientlib.o $(OBJ)/dynstring.o $(OBJ)/util.o
