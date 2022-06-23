@@ -6,7 +6,7 @@
 
 #define USAGE "Usage: client name authfile [host] port\n"
 #define AUTHFILE_ERR_MSG "Authfile error\n"
-#define HOST_ERR_MSG "Host invalid\n"
+#define HOST_ERR_MSG "Host/port invalid\n"
 #define COMM_ERR_MSG "Communications error\n"
 #define AUTH_ERR_MSG "Authentication error\n"
 #define KICKED_MSG "Kicked\n"

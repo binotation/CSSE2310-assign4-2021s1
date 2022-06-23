@@ -2,6 +2,7 @@
 #include "serverlib.h"
 
 static Args args;
+static int sock_fd;
 
 void setUp( void )
 {
@@ -45,6 +46,29 @@ void test_get_args_invalid_args_count( void )
     TEST_ASSERT_EQUAL( GET_ARGS_INVALID_ARGS_COUNT, res );
 }
 
+void test_get_listening_socket( void )
+{
+    unsigned short port = 0;
+    enum GetSockResult get_sock_res = get_listening_socket( "36434", &sock_fd, &port );
+    TEST_ASSERT_EQUAL( GET_SOCK_SUCCESS, get_sock_res );
+    TEST_ASSERT_EQUAL( 36434, port );
+}
+
+void test_get_listening_socket_invalid_port( void )
+{
+    enum GetSockResult get_sock_res = get_listening_socket( "ekm", &sock_fd, 0 );
+    TEST_ASSERT_EQUAL( GET_SOCK_PORT_INVALID, get_sock_res );
+}
+
+// nc -4 -l 18339
+void test_get_listening_socket_port_taken( void )
+{
+    TEST_IGNORE();
+    unsigned short port = 0;
+    enum GetSockResult get_sock_res = get_listening_socket( "18339", &sock_fd, &port );
+    TEST_ASSERT_EQUAL( GET_SOCK_COMM_ERR, get_sock_res );
+}
+
 int main( void )
 {
     UNITY_BEGIN();
@@ -53,6 +77,9 @@ int main( void )
     RUN_TEST( test_get_args3 );
     RUN_TEST( test_get_args_authfile_not_found );
     RUN_TEST( test_get_args_invalid_args_count );
+    RUN_TEST( test_get_listening_socket );
+    RUN_TEST( test_get_listening_socket_invalid_port );
+    RUN_TEST( test_get_listening_socket_port_taken );
 
     return UNITY_END();
 }

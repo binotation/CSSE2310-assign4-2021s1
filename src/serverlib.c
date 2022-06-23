@@ -1,4 +1,6 @@
 #include "serverlib.h"
+#include <string.h>
+#include <netdb.h>
 
 enum GetArgsResult get_args( Args *args, int argc, char **argv )
 {
@@ -19,4 +21,37 @@ enum GetArgsResult get_args( Args *args, int argc, char **argv )
 
     fclose( authfile );
     return GET_ARGS_SUCCESS;
+}
+
+enum GetSockResult get_listening_socket( const char *port, int *sock_fd, unsigned short *port_int )
+{
+    struct addrinfo *res;
+    struct addrinfo hints;
+    memset( &hints, 0, sizeof(struct addrinfo) );
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    // Get address info
+    if( getaddrinfo( NULL, port, &hints, &res )) return GET_SOCK_PORT_INVALID;
+    *sock_fd = socket( AF_INET, SOCK_STREAM, 0 );
+
+    // Bind socket to address and port
+    if( bind( *sock_fd, (struct sockaddr*)res->ai_addr, sizeof(struct sockaddr) ))
+    {
+        freeaddrinfo( res );
+        return GET_SOCK_COMM_ERR;
+    }
+    freeaddrinfo( res );
+
+    // Identify port
+    struct sockaddr_in ad;
+    socklen_t len = sizeof(struct sockaddr_in);
+    if( getsockname( *sock_fd, (struct sockaddr*)&ad, &len )) return GET_SOCK_COMM_ERR;
+    *port_int = ntohs( ad.sin_port );
+
+    // Begin listening
+    if( listen( *sock_fd, 3 ) < 0 ) return GET_SOCK_COMM_ERR;
+
+    return GET_SOCK_SUCCESS;
 }

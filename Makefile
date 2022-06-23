@@ -8,7 +8,7 @@ TEST := test
 UNITY := $(HOME)/repos/Unity/src
 BUILD := build
 
-VALGRIND := valgrind -s --leak-check=full --show-leak-kinds=possible --track-origins=yes
+VALGRIND := valgrind -s --leak-check=full --show-leak-kinds=all --track-origins=yes
 
 # include directories
 TESTINC = -I$(SRC) -I$(UNITY)
@@ -32,13 +32,13 @@ clean:
 	rm -f $(OBJ)/* $(BUILD)/*
 
 debug: CFLAGS += -g
-debug: client
-target: server client
-
-server: $(OBJ)/server.o $(OBJ)/util.o $(OBJ)/list.o
-	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
+debug: client server
+target: client server
 
 client: $(OBJ)/client.o $(OBJ)/clientlib.o $(OBJ)/dynstring.o $(OBJ)/util.o
+	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
+
+server: $(OBJ)/server.o $(OBJ)/serverlib.o $(OBJ)/dynstring.o $(OBJ)/list.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 
 test%: CFLAGS += -g
