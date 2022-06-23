@@ -74,6 +74,7 @@ bool check_name_in_use( ClientList *list, const char *name );
  */
 ListNode *get_node( ClientList *list, const char *name );
 
+// Specific-purpose functions
 /**
  * Increment a client's stat given its node.
  * @param stat	the stat to increment: 's' -> SAY:, 'k' -> KICK:, 'l' -> LIST:
@@ -90,6 +91,11 @@ void send_to_all( ClientList *list, const char *str );
  */
 void get_names_list( ClientList *list, DynString *names );
 
-// void show_clients_stats(ClientNode *root, pthread_mutex_t *listLock);
+/**
+ * Print client stats to stderr, e.g. for each client print "name:SAY:n:KICK:n:LIST:n".
+ * WARNING! this function does not write to stderr in a thread-safe manner because stderr is not
+ * always a shared resource in the server.
+ */
+void list_print_stats( ClientList *list );
 
 #endif

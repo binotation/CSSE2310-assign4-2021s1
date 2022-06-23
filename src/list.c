@@ -211,21 +211,17 @@ void get_names_list( ClientList *list, DynString *names )
     dynstring_popc( names );
 }
 
-/**
- *  Prints each clients stats to stderr. e.g. clientName:SAY:5:KICK:2:LIST:3 .
- *  Params:
- *      root: linked list root node
- *      listLock: lock for the clients' linked list
- **/
-// void show_clients_stats(ClientNode *root, pthread_mutex_t *listLock) {
-//     pthread_mutex_lock(listLock);
+void list_print_stats( ClientList *list )
+{
+    pthread_mutex_lock( &list->lock );
 
-//     ClientNode *current = root->next;
-//     while (current != 0) {
-//         char *conv = convert_unprintable(current->data.name);
-//         fprintf(stderr, "%s:SAY:%d:KICK:%d:LIST:%d\n", conv, current->data.say, current->data.kick, current->data.list);
-//         free(conv);
-//         current = current->next;
-//     }
-//     pthread_mutex_unlock(listLock);
-// }
+    ListNode *curr = list->head;
+    while( curr != 0 )
+    {
+        fprintf( stderr, "%s:SAY:%d:KICK:%d:LIST:%d\n",
+            curr->data.name->str, curr->data.say, curr->data.kick, curr->data.list );
+        curr = curr->next;
+    }
+
+    pthread_mutex_unlock( &list->lock );
+}

@@ -246,6 +246,51 @@ void test_get_names_list1( void )
     dynstring_destroy( &names );
 }
 
+void test_list_print_stats( void )
+{
+    unsigned int i;
+    DynString line;
+    dynstring_init( &line, 32 );
+    INSERT_DUMMY()
+
+    ListNode *clementine = get_node( &list, names[0].str );
+    ListNode *kingston = get_node( &list, names[1].str );
+    ListNode *nannie = get_node( &list, names[2].str );
+    ListNode *vicki = get_node( &list, names[3].str );
+
+    for( i = 0; i < 9; i++ ) inc_stat( &list, clementine, 's' );
+    for( i = 0; i < 17; i++ ) inc_stat( &list, clementine, 'k' );
+    for( i = 0; i < 16; i++ ) inc_stat( &list, clementine, 'l' );
+
+    for( i = 0; i < 16; i++ ) inc_stat( &list, kingston, 's' );
+    for( i = 0; i < 14; i++ ) inc_stat( &list, kingston, 'k' );
+    for( i = 0; i < 4; i++ ) inc_stat( &list, kingston, 'l' );
+
+    for( i = 0; i < 4; i++ ) inc_stat( &list, nannie, 's' );
+    for( i = 0; i < 19; i++ ) inc_stat( &list, nannie, 'k' );
+    for( i = 0; i < 17; i++ ) inc_stat( &list, nannie, 'l' );
+
+    for( i = 0; i < 12; i++ ) inc_stat( &list, vicki, 's' );
+    for( i = 0; i < 19; i++ ) inc_stat( &list, vicki, 'k' );
+    for( i = 0; i < 7; i++ ) inc_stat( &list, vicki, 'l' );
+
+    FILE *err = freopen( "build/test_list_print_stats.err", "w+", stderr );
+    list_print_stats( &list );
+    rewind( err );
+
+    dynstring_readline( &line, err );
+    TEST_ASSERT_EQUAL_STRING( "Clementine:SAY:9:KICK:17:LIST:16", line.str );
+    dynstring_readline( &line, err );
+    TEST_ASSERT_EQUAL_STRING( "Kingston:SAY:16:KICK:14:LIST:4", line.str );
+    dynstring_readline( &line, err );
+    TEST_ASSERT_EQUAL_STRING( "Nannie:SAY:4:KICK:19:LIST:17", line.str );
+    dynstring_readline( &line, err );
+    TEST_ASSERT_EQUAL_STRING( "Vicki:SAY:12:KICK:19:LIST:7", line.str );
+
+    fclose( err );
+    dynstring_destroy( &line );
+}
+
 int main( void )
 {
     UNITY_BEGIN();
@@ -314,6 +359,7 @@ int main( void )
     RUN_TEST( test_send_to_all );
     RUN_TEST( test_get_names_list0 );
     RUN_TEST( test_get_names_list1 );
+    RUN_TEST( test_list_print_stats );
 
     dynstring_destroy( &names[3] );
     dynstring_destroy( &names[2] );
