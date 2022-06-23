@@ -212,10 +212,6 @@ void test_send_to_all( void )
     fclose( out2 );
     fclose( out1 );
     fclose( out0 );
-    pthread_mutex_destroy( &lock3 );
-    pthread_mutex_destroy( &lock2 );
-    pthread_mutex_destroy( &lock1 );
-    pthread_mutex_destroy( &lock0 );
     dynstring_destroy( &line );
 }
 
