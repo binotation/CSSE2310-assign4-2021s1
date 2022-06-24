@@ -55,7 +55,12 @@ typedef struct
 // Type of command received.
 enum ReceivedType
 {
-    AUTH, NAME, SAY, KICK, LIST, LEAVE,
+    RECV_AUTH,
+    RECV_NAME,
+    RECV_SAY,
+    RECV_KICK,
+    RECV_LIST,
+    RECV_LEAVE,
 };
 
 // Arg for signal handler routine.
@@ -111,10 +116,18 @@ enum GetSockResult get_listening_socket( const char *port, int *sock_fd, unsigne
 void *print_stats_sig_handler( void *temp );
 
 /**
- * Send AUTH:. If reply AUTH: with correct auth string then send OK: and return true; if incorrect
+ * Send AUTH:. If reply AUTH: with correct auth string then send OK: and return true; if incorrect,
  * return false. If not replied AUTH: send AUTH: again.
  */
-bool negotiate_auth( const DynString *authdstr, ClientStreams *streams, ReceivedStats *stats, DynString *line );
+bool negotiate_auth( const DynString *authdstr, ClientStreams *streams, ReceivedStats *stats,
+    DynString *line );
+
+/**
+ * Send WHO:. If reply NAME: with a name that is not in use then send OK: and return true; if name
+ * in use, send NAME_TAKEN: and WHO: and repeat. If not replied NAME:, send WHO: again.
+ */
+bool negotiate_name( DynString *name, ClientStreams *streams, ReceivedStats *stats, ClientList *clients,
+    DynString *line );
 
 /**
  * Thread routine for handling communication with clients.

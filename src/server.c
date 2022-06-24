@@ -6,50 +6,6 @@
 #include <netdb.h>
 
 /**
- *  Identifies the client's name.
- *  Params:
- *      to: client write stream
- *      from: client read stream
- *      toLock: write stream lock
- *      received: received stats
- *      receivedLock: lock for received stats
- *      clients: clients' linked list root node
- *      clientsLock: clients' list lock
- *  Returns: client's name if name negotiation was completed, NULL if client
- *  disconnected.
- **/
-// char *identify_client(FILE *to, FILE *from, pthread_mutex_t *toLock, Received *received, pthread_mutex_t *receivedLock,
-//         ClientNode *clients, pthread_mutex_t *clientsLock) {
-//     send_r(to, "WHO:\n", toLock);
-//     int readsBeforeEof;
-
-//     String line = get_line(from, &readsBeforeEof);
-//     while (readsBeforeEof == -1) {
-//         if (!strncmp(line.chars, "NAME:", 5)) {
-//             log_received(received, receivedLock, NAME);
-//             if (line.length == 5 || check_name_exists(clients, line.chars + 5, clientsLock)) {
-//                 send_r(to, "NAME_TAKEN:\n", toLock);
-//             } else {
-//                 send_r(to, "OK:\n", toLock);
-//                 int nameLength = strlen(line.chars + 5);
-//                 char *name = (char*)malloc(sizeof(char) * (nameLength + 1));
-//                 strcpy(name, line.chars + 5);
-//                 insert_client(clients, name, to, toLock, clientsLock);
-//                 free(line.chars);
-//                 return name;
-//             }
-//         }
-//         free(line.chars);
-//         if (readsBeforeEof == -1) {
-//             send_r(to, "WHO:\n", toLock);
-//             line = get_line(from, &readsBeforeEof);
-//         }
-//     }
-//     free(line.chars);
-//     return NULL;
-// }
-
-/**
  *  Sends ENTER:name to all clients and prints (name has entered the chat) to
  *  stdout.
  *  Params: 
@@ -268,6 +224,9 @@ int main( int argc, char **argv )
     int client_sock;
     ClientHandlerArg *client_handler_arg;
     pthread_t tid;
+    pthread_attr_t attr;
+    pthread_attr_init( &attr );
+    pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
 
     while(1)
     {
@@ -285,8 +244,7 @@ int main( int argc, char **argv )
         };
 
         // Create client handler thread
-        pthread_create( &tid, NULL, client_handler, client_handler_arg );
-        pthread_detach( tid );
+        pthread_create( &tid, &attr, client_handler, client_handler_arg );
     }
 
     pthread_cancel( sig_handler );
