@@ -26,7 +26,7 @@ void test_dynstring_nfrom( void )
 {
     const char *name = "Bentley";
     DynString dname;
-    dynstring_nfrom( &dname, name, 7 );
+    dynstring_nfrom( &dname, name, 7, 8 );
     TEST_ASSERT_EQUAL_STRING( name, dname.str );
     TEST_ASSERT_EQUAL( 7, dname.length );
     TEST_ASSERT_EQUAL( 8, dname.size );

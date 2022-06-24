@@ -12,9 +12,9 @@ void dynstring_init( DynString *dstr, unsigned int size )
     dstr->length = 0;
 }
 
-void dynstring_nfrom( DynString *dstr, const char *str, unsigned int length )
+void dynstring_nfrom( DynString *dstr, const char *str, unsigned int length, unsigned int size )
 {
-    dynstring_init( dstr, length + 1 );
+    dynstring_init( dstr, size );
     memcpy( dstr->str, str, sizeof(char) * length );
     dstr->str[ dstr->length = length ] = '\0';
 }

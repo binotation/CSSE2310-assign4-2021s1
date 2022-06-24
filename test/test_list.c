@@ -296,10 +296,10 @@ int main( void )
 {
     UNITY_BEGIN();
 
-    dynstring_nfrom( &names[0], "Clementine", 10 );
-    dynstring_nfrom( &names[1], "Kingston", 8 );
-    dynstring_nfrom( &names[2], "Nannie", 6 );
-    dynstring_nfrom( &names[3], "Vicki", 5 );
+    dynstring_nfrom( &names[0], "Clementine", 10, 11 );
+    dynstring_nfrom( &names[1], "Kingston", 8, 9 );
+    dynstring_nfrom( &names[2], "Nannie", 6, 7 );
+    dynstring_nfrom( &names[3], "Vicki", 5, 6 );
 
     RUN_TEST( test_init );
 

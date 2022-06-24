@@ -35,8 +35,9 @@ void dynstring_init( DynString *dstr, unsigned int size );
 /**
  * Create a dynstring from str by copying memory of length. dstr must be uninitialized.
  * @param length	length of str excluding NULL terminator
+ * @param size		size of memory to be allocated, must be sufficient to store the string
  */
-void dynstring_nfrom( DynString *dstr, const char *str, unsigned int length );
+void dynstring_nfrom( DynString *dstr, const char *str, unsigned int length, unsigned int size );
 
 /**
  * Destroy DynString.
