@@ -14,11 +14,16 @@
 // Test permutation of order of inserting names.
 #define TEST_INSERT( name0, name1, name2, name3 )											\
 {																							\
+    ListNode *node;																			\
     pthread_mutex_t lock0, lock1, lock2, lock3;												\
-    list_insert( &list, &names[name0], (FILE*)1, &lock0 );									\
-    list_insert( &list, &names[name1], (FILE*)2, &lock1 );									\
-    list_insert( &list, &names[name2], (FILE*)3, &lock2 );									\
-    list_insert( &list, &names[name3], (FILE*)4, &lock3 );									\
+    node = list_insert( &list, &names[name0], (FILE*)1, &lock0 );							\
+    TEST_ASSERT_EQUAL_STRING( names[name0].str, node->data.name->str );						\
+    node = list_insert( &list, &names[name1], (FILE*)2, &lock1 );							\
+    TEST_ASSERT_EQUAL_STRING( names[name1].str, node->data.name->str );						\
+    node = list_insert( &list, &names[name2], (FILE*)3, &lock2 );							\
+    TEST_ASSERT_EQUAL_STRING( names[name2].str, node->data.name->str );						\
+    node = list_insert( &list, &names[name3], (FILE*)4, &lock3 );							\
+    TEST_ASSERT_EQUAL_STRING( names[name3].str, node->data.name->str );						\
 																							\
     TEST_ASSERT_EQUAL_STRING( names[0].str, list.head->data.name->str );					\
     TEST_ASSERT_EQUAL_STRING( names[1].str, list.head->next->data.name->str );				\

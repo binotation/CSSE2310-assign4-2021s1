@@ -57,7 +57,7 @@ void list_destroy( ClientList *list );
 /**
  * Insert a new client into a list.
  */
-void list_insert( ClientList *list, const DynString *name, FILE *tx, pthread_mutex_t *tx_lock );
+ListNode *list_insert( ClientList *list, const DynString *name, FILE *tx, pthread_mutex_t *tx_lock );
 
 /**
  * Delete a client identified by name.

@@ -11,14 +11,14 @@
         prev_next = new_node;										\
         new_node->next = 0; /* God bless valgrind */				\
         pthread_mutex_unlock( &list->lock );						\
-        return;														\
+        return new_node;											\
     }																\
     else if( strcasecmp( name->str, curr->data.name->str ) <= 0 )	\
     {																\
         new_node->next = curr;										\
         prev_next = new_node;										\
         pthread_mutex_unlock( &list->lock );						\
-        return;														\
+        return new_node;											\
     }																\
 }
 
@@ -63,7 +63,7 @@ void list_destroy( ClientList *list )
     pthread_mutex_destroy( &list->lock );
 }
 
-void list_insert( ClientList *list, const DynString *name, FILE *tx, pthread_mutex_t *tx_lock )
+ListNode *list_insert( ClientList *list, const DynString *name, FILE *tx, pthread_mutex_t *tx_lock )
 {
     // Create new node
     ListNode *new_node = malloc( sizeof(ListNode) );
