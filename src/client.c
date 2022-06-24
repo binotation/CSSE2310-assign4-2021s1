@@ -72,8 +72,8 @@ int main( int argc, char **argv )
         fflush(server.write);
     } while ( !exited );
 
-    pthread_cancel(server_handler);
-    pthread_join(server_handler, 0);
+    pthread_cancel( server_handler );
+    pthread_join( server_handler, 0 );
 
     dynstring_destroy( &line );
     fclose( server.read );
