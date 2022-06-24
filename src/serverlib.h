@@ -65,6 +65,16 @@ typedef struct
     sigset_t set; // For which signals to handle
 } SigHandlerArg;
 
+// Arg for client handler routine.
+typedef struct
+{
+    int client_sock;
+    const DynString *authdstr;
+    ReceivedStats *stats;
+    ClientList *clients;
+    pthread_mutex_t *stdout_lock;
+} ClientHandlerArg;
+
 /**
  * Initialize ReceivedStats.
  */

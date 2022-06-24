@@ -1,18 +1,9 @@
 #include "serverlib.h"
 #include "list.h"
+#include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
-
-/* Arg for client handler routine. */
-// typedef struct {
-//     int *clientFd; // client file descriptor
-//     char *auth; // auth string
-//     Received *received; // received stats
-//     pthread_mutex_t *receivedLock; // lock for received stats
-//     ClientNode *clients; // clients' linked list root node
-//     pthread_mutex_t *clientsLock; // lock for clients' linked list
-//     pthread_mutex_t *stdoutLock; // lock for stdout
-// } HandleClientArg;
+#include <netdb.h>
 
 /**
  *  Thread safe stream writer.
@@ -368,50 +359,6 @@
 //     return 0;
 // }
 
-/**
- *  Accepts clients' connections to the listening socket.
- *  Params:
- *      listenFd: the listening socket
- *      auth: auth string
- *      received:  received stats
- *      receivedLock: received lock
- *      clients: clients' linked list root node
- *      clientsLock: lock for clients' list
- **/
-// void accept_clients(int listenFd, char *auth, Received *received, pthread_mutex_t *receivedLock, ClientNode *clients, 
-//         pthread_mutex_t *clientsLock) {
-//     struct sockaddr_in fromAddr;
-//     socklen_t fromAddrSize = sizeof(struct sockaddr_in);
-    
-//     // initialise stdout lock
-//     pthread_mutex_t stdoutLock;
-//     pthread_mutex_init(&stdoutLock, 0);
-//     HandleClientArg *arg;
-
-//     while (1) {
-//         int *clientFd = (int*)malloc(sizeof(int));
-//         *clientFd = accept(listenFd, (struct sockaddr*)&fromAddr, &fromAddrSize);
-//         if (*clientFd < 0) {
-//             free(clientFd);
-//             continue;
-//         }
-//         // set arg
-//         arg = (HandleClientArg*)malloc(sizeof(HandleClientArg));
-//         arg->clientFd = clientFd;
-//         arg->auth = auth;
-//         arg->received = received;
-//         arg->clients = clients;
-//         arg->receivedLock = receivedLock;
-//         arg->clientsLock = clientsLock;
-//         arg->stdoutLock = &stdoutLock;
-
-//         // create client handler thread
-//         pthread_t tid;
-//         pthread_create(&tid, NULL, handle_client, arg);
-//         pthread_detach(tid);
-//     }    
-// }
-
 int main( int argc, char **argv )
 {
     // Get args
@@ -467,7 +414,36 @@ int main( int argc, char **argv )
     // Create signal handler thread
     pthread_create( &sig_handler, NULL, print_stats_sig_handler, &sig_handler_arg );
 
-    // accept_clients(listenFd, auth.chars, received, &receivedLock, clients, &clientsLock);
+    // Start accepting clients
+    pthread_mutex_t stdout_lock;
+    pthread_mutex_init( &stdout_lock, 0 );
+
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_size = sizeof(struct sockaddr_in);
+
+    int client_sock;
+    ClientHandlerArg *client_handler_arg;
+    pthread_t tid;
+
+    while(1)
+    {
+        client_sock = accept( listen_sock, (struct sockaddr*)&client_addr, &client_addr_size );
+        if( client_sock < 0 ) continue;
+
+        client_handler_arg = malloc( sizeof(ClientHandlerArg) );
+        *client_handler_arg = (ClientHandlerArg)
+        {
+            .client_sock = client_sock,
+            .authdstr = &args.authdstr,
+            .stats = &stats,
+            .clients = &clients,
+            .stdout_lock = &stdout_lock,
+        };
+
+        // Create client handler thread
+        // pthread_create( &tid, NULL, handle_client, arg );
+        // pthread_detach( tid );
+    }
 
     pthread_cancel( sig_handler );
     pthread_join( sig_handler, 0 );
