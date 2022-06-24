@@ -1,5 +1,7 @@
 #include "serverlib.h"
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <netdb.h>
 
 void received_stats_init( ReceivedStats *received_stats )
@@ -99,5 +101,128 @@ void *print_stats_sig_handler( void *temp )
             pthread_mutex_unlock( &arg->stats->lock );
         }
     }
+    return 0;
+}
+
+static void update_stats( ReceivedStats *stats, enum ReceivedType type )
+{
+    pthread_mutex_lock( &stats->lock );
+    switch( type )
+    {
+        case AUTH:
+            stats->auth++;
+            break;
+        case NAME:
+            stats->name++;
+            break;
+        case SAY:
+            stats->say++;
+            break;
+        case KICK:
+            stats->kick++;
+            break;
+        case LIST:
+            stats->list++;
+            break;
+        case LEAVE:
+            stats->leave++;
+    }
+    pthread_mutex_unlock( &stats->lock );
+}
+
+static inline void clean_up_client( FILE *rx, FILE *tx, void *arg )
+{
+    fclose( rx );
+    fclose( tx );
+    free( arg );
+}
+
+static inline void write_flush_safe( const char *str, FILE *tx, pthread_mutex_t *tx_lock )
+{
+    pthread_mutex_lock( tx_lock );
+    fputs( str, tx );
+    fflush( tx );
+    pthread_mutex_unlock( tx_lock );
+}
+
+bool negotiate_auth( const DynString *authdstr, ClientStreams *streams, ReceivedStats *stats, DynString *line )
+{
+    enum ReadlineResult readline_res;
+    write_flush_safe( "AUTH:\n", streams->tx, &streams->tx_lock );
+
+    do
+    {
+        readline_res = dynstring_readline( line, streams->rx );
+        if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
+        if( !strncmp( line->str, "AUTH:", 5 ))
+        {
+            update_stats( stats, AUTH );
+            if( !strcmp( line->str + 5, authdstr->str ))
+            {
+                write_flush_safe( "OK:\n", streams->tx, &streams->tx_lock );
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        write_flush_safe( "AUTH:\n", streams->tx, &streams->tx_lock );
+    } while(1);
+}
+
+void *client_handler( void *temp )
+{
+    ClientHandlerArg *arg = temp;
+
+    // Initialize ClientStreams
+    ClientStreams streams;
+    streams.rx = fdopen( dup( arg->client_sock ), "r" );
+    streams.tx = fdopen( arg->client_sock, "w" );
+    pthread_mutex_init( &streams.tx_lock, 0 );
+
+    DynString line;
+    dynstring_init( &line, 20 );
+
+    // Negotiate authentication
+    if( !negotiate_auth( arg->authdstr, &streams, arg->stats, &line ))
+    {
+        clean_up_client( streams.tx, streams.rx, arg );
+        return 0;
+    }
+    // char *name;
+    // if (!(name = identify_client(to, from, &toLock, arg->received, arg->receivedLock, arg->clients, arg->clientsLock))) {
+    //     clean_up_client(to, from, &toLock, arg->clientFd, arg);
+    //     return 0;
+    // }
+    // ClientNode *node = get_client_node(arg->clients, name, arg->clientsLock);
+    // send_enter(arg->clients, name, arg->clientsLock, arg->stdoutLock); 
+    // int readsBeforeEof;
+    // String line;
+    // bool left = false;
+    // while (!left) {
+    //     line = get_line(from, &readsBeforeEof);
+    //     if (readsBeforeEof > -1) {
+    //         free(line.chars);
+    //         break;
+    //     }
+    //     if (!strncmp(line.chars, "SAY:", 4)) {
+    //         handle_say(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients, name, line.chars + 4,
+    //                 arg->stdoutLock);
+    //     } else if (!strncmp(line.chars, "KICK:", 5)) {
+    //         kick(node, arg->clientsLock, arg->stdoutLock, arg->received, arg->receivedLock, arg->clients, line.chars + 5);
+    //     } else if (!strncmp(line.chars, "LIST:", 5)) {
+    //         handle_list(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients);
+    //     } else if (!strncmp(line.chars, "LEAVE:", 6)) {
+    //         log_received(arg->received, arg->receivedLock, LEAVE);
+    //         left = true;
+    //     }
+    //     free(line.chars);
+    //     usleep(100000);
+    // }
+    // delete_client(arg->clients, name, arg->clientsLock);
+    // send_leave(arg->clients, name, arg->clientsLock, arg->stdoutLock);
+    // free(name);
+    // clean_up_client(to, from, &toLock, arg->clientFd, arg);
     return 0;
 }

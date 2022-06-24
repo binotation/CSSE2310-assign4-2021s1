@@ -3,6 +3,7 @@
 
 #include "dynstring.h"
 #include "list.h"
+#include <stdbool.h>
 #include <pthread.h>
 #include <signal.h>
 
@@ -75,6 +76,14 @@ typedef struct
     pthread_mutex_t *stdout_lock;
 } ClientHandlerArg;
 
+// Client read/write streams.
+typedef struct
+{
+    FILE *rx;
+    FILE *tx;
+    pthread_mutex_t tx_lock;
+} ClientStreams;
+
 /**
  * Initialize ReceivedStats.
  */
@@ -94,11 +103,22 @@ enum GetArgsResult get_args( Args *args, int argc, char **argv );
 enum GetSockResult get_listening_socket( const char *port, int *sock_fd, unsigned short *port_int );
 
 /**
- * Signal handler routine. SIGHUP and SIGPIPE are blocked in the main thread
+ * Signal handler thread routine. SIGHUP and SIGPIPE are blocked in the main thread
  * and handled here instead. SIGPIPE should be ignored and SIGHUP should trigger
  * the received stats to be printed to stderr. This is the only context where
  * stderr can be written to.
  */
 void *print_stats_sig_handler( void *temp );
+
+/**
+ * Send AUTH:. If reply AUTH: with correct auth string then send OK: and return true; if incorrect
+ * return false. If not replied AUTH: send AUTH: again.
+ */
+bool negotiate_auth( const DynString *authdstr, ClientStreams *streams, ReceivedStats *stats, DynString *line );
+
+/**
+ * Thread routine for handling communication with clients.
+ */
+void *client_handler( void *temp );
 
 #endif

@@ -6,108 +6,6 @@
 #include <netdb.h>
 
 /**
- *  Thread safe stream writer.
- *  Params:
- *      to: write stream
- *      line: line to write
- *      toLock: write stream lock
- **/
-// void send_r(FILE *to, const char *line, pthread_mutex_t *toLock) {
-//     pthread_mutex_lock(toLock);
-//     fputs(line, to);
-//     fflush(to);
-//     pthread_mutex_unlock(toLock);
-// }
-
-/**
- *  Log a received message by updating the received stats.
- *  Params:
- *      received: pointer to received stats
- *      receivedLock: received stats lock
- *      type: the type of message received
- **/
-// void log_received(Received *received, pthread_mutex_t *receivedLock, ReceivedType type) {
-//     pthread_mutex_lock(receivedLock);
-//     switch (type) {
-//         case AUTH:
-//             received->auth++;
-//             break;
-//         case NAME:
-//             received->name++;
-//             break;
-//         case SAY:
-//             received->say++;
-//             break;
-//         case KICK:
-//             received->kick++;
-//             break;
-//         case LIST:
-//             received->list++;
-//             break;
-//         case LEAVE:
-//             received->leave++;
-//     }
-//     pthread_mutex_unlock(receivedLock);
-// }
-
-/**
- *  Cleans up client by closing streams, destroying the write stream lock,
- *  freeing the file descriptor and thread routine arg.
- *  Params:
- *      to: write stream
- *      from: read stream
- *      toLock: write stream lock
- *      clientFd: the client's file descriptor
- *      arg: the client's thread arg
- **/
-// void clean_up_client(FILE *to, FILE *from, pthread_mutex_t *toLock, int *clientFd, HandleClientArg *arg) {
-//     fclose(to);
-//     fclose(from);
-//     pthread_mutex_destroy(toLock);
-//     free(clientFd);
-//     free(arg);
-// }
-
-/**
- *  Authenticates the client.
- *  Params:
- *      to: client write stream
- *      from: client read stream
- *      auth: auth string
- *      toLock: write stream lock
- *      received: received stats
- *      receivedLock: lock for received stats
- *  Returns: true if client was authenticated, false otherwise
- **/
-// bool authenticate_client(FILE *to, FILE *from, const char *auth, pthread_mutex_t *toLock, Received *received, 
-//         pthread_mutex_t *receivedLock) {
-//     send_r(to, "AUTH:\n", toLock);
-//     int readsBeforeEof;
-//     String line = get_line(from, &readsBeforeEof);
-    
-//     while (readsBeforeEof == -1) {
-//         if (!strncmp(line.chars, "AUTH:", 5)) {
-//             log_received(received, receivedLock, AUTH);
-//             if (!strcmp(line.chars + 5, auth)) {
-//                 send_r(to, "OK:\n", toLock);
-//                 free(line.chars);
-//                 return true;
-//             } else {
-//                 free(line.chars);
-//                 return false;
-//             }
-//         }
-//         free(line.chars);
-//         if (readsBeforeEof == -1) {
-//             send_r(to, "AUTH:\n", toLock);
-//             line = get_line(from, &readsBeforeEof);
-//         }
-//     }
-//     free(line.chars);
-//     return false;
-// }
-
-/**
  *  Identifies the client's name.
  *  Params:
  *      to: client write stream
@@ -305,60 +203,6 @@
 //     free(conv);
 // }
 
-// /**
-//  *  Client handling thread routine. Handles communication with the client.
-//  *  Params:
-//  *      tempArg: HandleClientArg containing received stats, clients list, 
-//  *      locks, auth string, and file descriptor.
-//  *  Returns: NULL
-//  **/
-// void *handle_client(void *tempArg) {
-//     pthread_mutex_t toLock; // initialise write stream lock
-//     pthread_mutex_init(&toLock, 0);
-//     HandleClientArg *arg = (HandleClientArg*)tempArg;
-//     FILE *from = fdopen(dup(*(arg->clientFd)), "r");
-//     FILE *to = fdopen(*(arg->clientFd), "w");
-//     if (!authenticate_client(to, from, arg->auth, &toLock, arg->received, arg->receivedLock)) {
-//         clean_up_client(to, from, &toLock, arg->clientFd, arg);
-//         return 0;
-//     }
-//     char *name;
-//     if (!(name = identify_client(to, from, &toLock, arg->received, arg->receivedLock, arg->clients, arg->clientsLock))) {
-//         clean_up_client(to, from, &toLock, arg->clientFd, arg);
-//         return 0;
-//     }
-//     ClientNode *node = get_client_node(arg->clients, name, arg->clientsLock);
-//     send_enter(arg->clients, name, arg->clientsLock, arg->stdoutLock); 
-//     int readsBeforeEof;
-//     String line;
-//     bool left = false;
-//     while (!left) {
-//         line = get_line(from, &readsBeforeEof);
-//         if (readsBeforeEof > -1) {
-//             free(line.chars);
-//             break;
-//         }
-//         if (!strncmp(line.chars, "SAY:", 4)) {
-//             handle_say(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients, name, line.chars + 4,
-//                     arg->stdoutLock);
-//         } else if (!strncmp(line.chars, "KICK:", 5)) {
-//             kick(node, arg->clientsLock, arg->stdoutLock, arg->received, arg->receivedLock, arg->clients, line.chars + 5);
-//         } else if (!strncmp(line.chars, "LIST:", 5)) {
-//             handle_list(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients);
-//         } else if (!strncmp(line.chars, "LEAVE:", 6)) {
-//             log_received(arg->received, arg->receivedLock, LEAVE);
-//             left = true;
-//         }
-//         free(line.chars);
-//         usleep(100000);
-//     }
-//     delete_client(arg->clients, name, arg->clientsLock);
-//     send_leave(arg->clients, name, arg->clientsLock, arg->stdoutLock);
-//     free(name);
-//     clean_up_client(to, from, &toLock, arg->clientFd, arg);
-//     return 0;
-// }
-
 int main( int argc, char **argv )
 {
     // Get args
@@ -441,8 +285,8 @@ int main( int argc, char **argv )
         };
 
         // Create client handler thread
-        // pthread_create( &tid, NULL, handle_client, arg );
-        // pthread_detach( tid );
+        pthread_create( &tid, NULL, client_handler, client_handler_arg );
+        pthread_detach( tid );
     }
 
     pthread_cancel( sig_handler );
