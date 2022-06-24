@@ -2,7 +2,9 @@
 #define SERVERLIB_H
 
 #include "dynstring.h"
+#include "list.h"
 #include <pthread.h>
+#include <signal.h>
 
 #define USAGE "Usage: server authfile [port]\n"
 #define AUTHFILE_ERR_MSG "Authfile error\n"
@@ -55,6 +57,14 @@ enum ReceivedType
     AUTH, NAME, SAY, KICK, LIST, LEAVE,
 };
 
+// Arg for signal handler routine.
+typedef struct
+{
+    ReceivedStats *stats;
+    ClientList *clients;
+    sigset_t set; // For which signals to handle
+} SigHandlerArg;
+
 /**
  * Initialize ReceivedStats.
  */
@@ -72,5 +82,13 @@ enum GetArgsResult get_args( Args *args, int argc, char **argv );
  * @returns	if success, invalid port or other error e.g. port in use.
  */
 enum GetSockResult get_listening_socket( const char *port, int *sock_fd, unsigned short *port_int );
+
+/**
+ * Signal handler routine. SIGHUP and SIGPIPE are blocked in the main thread
+ * and handled here instead. SIGPIPE should be ignored and SIGHUP should trigger
+ * the received stats to be printed to stderr. This is the only context where
+ * stderr can be written to.
+ */
+void *print_stats_sig_handler( void *temp );
 
 #endif

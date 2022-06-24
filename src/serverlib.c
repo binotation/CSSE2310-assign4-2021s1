@@ -69,3 +69,35 @@ enum GetSockResult get_listening_socket( const char *port, int *sock_fd, unsigne
 
     return GET_SOCK_SUCCESS;
 }
+
+void *print_stats_sig_handler( void *temp )
+{
+    SigHandlerArg *arg = temp;
+    int sig;
+
+    while(1)
+    {
+        sigwait( &arg->set, &sig );
+        if( sig == SIGPIPE ) continue;
+        else
+        {
+            // SIGHUP
+            fputs( "@CLIENTS@\n", stderr );
+            list_print_stats( arg->clients );
+
+            fputs( "@SERVER@\n", stderr );
+            pthread_mutex_lock( &arg->stats->lock );
+            fprintf( stderr,
+                "server:AUTH:%u:NAME:%u:SAY:%u:KICK:%u:LIST:%u:LEAVE:%u\n",
+                arg->stats->auth,
+                arg->stats->name,
+                arg->stats->say,
+                arg->stats->kick,
+                arg->stats->list,
+                arg->stats->leave
+            );
+            pthread_mutex_unlock( &arg->stats->lock );
+        }
+    }
+    return 0;
+}

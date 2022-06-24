@@ -3,16 +3,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-/* Arg for signal handler routine. */
-// typedef struct {
-//     Received *received; // received stats
-//     pthread_mutex_t *receivedLock; // lock for received stats
-//     ClientNode *clients; // clients' linked list root node
-//     pthread_mutex_t *clientsLock; // lock for clients' linked list
-//     sigset_t *set; // sigset for which signals to handle
-// } SigHandlerArg;
-
-// /* Arg for client handler routine. */
+/* Arg for client handler routine. */
 // typedef struct {
 //     int *clientFd; // client file descriptor
 //     char *auth; // auth string
@@ -323,40 +314,6 @@
 //     free(conv);
 // }
 
-/**
- *  Sig handler thread routine. Ignores SIGPIPE. Upon receiving SIGHUP, 
- *  prints out a table of stats for messages received by server and sent by 
- *  clients.
- *  Params:
- *      tempArg: pointer to SigHandlerArg
- *  Returns: NULL
- **/
-// void *show_stats(void *tempArg) {
-//     SigHandlerArg *arg = (SigHandlerArg*)tempArg;
-//     int sig;
-    
-//     while (1) {
-//         sigwait(arg->set, &sig);
-//         if (sig == SIGPIPE) {
-//             continue;
-//         }
-//         fputs("@CLIENTS@\n", stderr);
-//         show_clients_stats(arg->clients, arg->clientsLock);
-        
-//         fputs("@SERVER@\n", stderr);
-//         pthread_mutex_lock(arg->receivedLock);
-        
-//         fprintf(stderr, "server:AUTH:%d:NAME:%d:SAY:%d:KICK:%d:LIST:%d:LEAVE:"
-//                 "%d\n", arg->received->auth, arg->received->name, 
-//                 arg->received->say, arg->received->kick, arg->received->list,
-//                 arg->received->leave);
-        
-//         pthread_mutex_unlock(arg->receivedLock);
-//     }
-
-//     return 0;
-// }
-
 // /**
 //  *  Client handling thread routine. Handles communication with the client.
 //  *  Params:
@@ -489,30 +446,31 @@ int main( int argc, char **argv )
     }
 
     // Initialize clients list and received stats
-    ClientList list;
+    ClientList clients;
     ReceivedStats stats;
-    list_init( &list );
+    list_init( &clients );
     received_stats_init( &stats );
 
-    // set up sig handler thread
-    // SigHandlerArg sigHandlerArg =
-    // {
-    //     .received = received,
-    //     .clients = clients,
-    //     .receivedLock = &receivedLock,
-    //     .clientsLock = &clientsLock
-    // };
+    // Set up signal handler thread
+    pthread_t sig_handler;
+    SigHandlerArg sig_handler_arg;
 
-    // sigset_t set;
-    // pthread_t sigHandler;
-    // sigemptyset(&set);
-    // sigaddset(&set, SIGHUP);
-    // sigaddset(&set, SIGPIPE);
-    // pthread_sigmask(SIG_SETMASK, &set, NULL);
-    // sigHandlerArg.set = &set;
-    // pthread_create(&sigHandler, NULL, show_stats, &sigHandlerArg);
+    sig_handler_arg.stats = &stats;
+    sig_handler_arg.clients = &clients;
+
+    sigemptyset( &sig_handler_arg.set );
+    sigaddset( &sig_handler_arg.set, SIGHUP );
+    sigaddset( &sig_handler_arg.set, SIGPIPE );
+    // Block SIGHUP, SIGPIPE in this thread (main thread)
+    pthread_sigmask( SIG_SETMASK, &sig_handler_arg.set, NULL );
+
+    // Create signal handler thread
+    pthread_create( &sig_handler, NULL, print_stats_sig_handler, &sig_handler_arg );
 
     // accept_clients(listenFd, auth.chars, received, &receivedLock, clients, &clientsLock);
+
+    pthread_cancel( sig_handler );
+    pthread_join( sig_handler, 0 );
     dynstring_destroy( &args.authdstr );
     return NO_ERR;
 }
