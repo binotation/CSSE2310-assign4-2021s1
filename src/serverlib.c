@@ -1,4 +1,5 @@
 #include "serverlib.h"
+#include "util.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,6 +12,8 @@
 #define KICK_LEN 5
 #define LIST_LEN 5
 #define LEAVE_LEN 6
+#define ENTER_LEN 6
+#define MSG_LEN 4
 
 void received_stats_init( ReceivedStats *received_stats )
 {
@@ -138,7 +141,7 @@ static void update_stats( ReceivedStats *stats, enum ReceivedType type )
     pthread_mutex_unlock( &stats->lock );
 }
 
-static inline void clean_up_client( ClientStreams *streams, DynString *name, DynString *line,
+static void clean_up_client( ClientStreams *streams, DynString *name, DynString *line,
     void *arg )
 {
     fclose( streams->tx );
@@ -148,7 +151,7 @@ static inline void clean_up_client( ClientStreams *streams, DynString *name, Dyn
     free( arg );
 }
 
-static inline void write_flush_safe( const char *str, FILE *tx, pthread_mutex_t *tx_lock )
+static void write_flush_safe( const char *str, FILE *tx, pthread_mutex_t *tx_lock )
 {
     pthread_mutex_lock( tx_lock );
     fputs( str, tx );
@@ -211,6 +214,57 @@ bool negotiate_name( DynString *name, ClientStreams *streams, ReceivedStats *sta
     } while(1);
 }
 
+static void send_enter( ClientList *clients, const DynString *name, pthread_mutex_t *stdout_lock )
+{
+    // strlen( "ENTER:" ) + strlen( name ) + strlen( "\n\0" )
+    char *cmd = malloc( sizeof(char) * ( ENTER_LEN + name->length + 2 ));
+    sprintf( cmd, "ENTER:%s\n", name->str );
+    send_to_all( clients, cmd );
+    free( cmd );
+
+    pthread_mutex_lock( stdout_lock );
+    printf( "(%s has entered the chat)\n", name->str );
+    fflush( stdout );
+    pthread_mutex_unlock( stdout_lock );
+}
+
+static void send_leave( ClientList *clients, const DynString *name, pthread_mutex_t *stdout_lock )
+{
+    // strlen( "LEAVE:" ) + strlen( name ) + strlen( "\n\0" )
+    char *cmd = malloc( sizeof(char) * ( LEAVE_LEN + name->length + 2 ));
+    sprintf( cmd, "LEAVE:%s\n", name->str );
+    send_to_all( clients, cmd );
+    free( cmd );
+
+    pthread_mutex_lock( stdout_lock );
+    printf("(%s has left the chat)\n", name->str);
+    fflush( stdout );
+    pthread_mutex_unlock( stdout_lock );
+}
+
+// static void handle_say( ListNode *client, ClientList *clients, ReceivedStats *stats,
+//     const DynString *name, DynString *line, pthread_mutex_t *stdout_lock )
+// {
+//     inc_stat( clients, client, 's' );
+//     update_stats( stats, RECV_SAY );
+
+//     char *msg = line->str + SAY_LEN;
+//     unsigned int msg_length = line->length - SAY_LEN;
+//     replace_unprintable( msg );
+
+//     // Construct cmd to send
+//     // strlen( "MSG:" ) + strlen( name + ':' ) + strlen( message ) + strlen( "\n\0" )
+//     char *cmd = malloc( sizeof(char) * ( MSG_LEN + msg_length + 3 ));
+//     sprintf( cmd, "MSG:%s:%s\n", name->str, msg );
+//     send_to_all( clients, cmd );
+//     free( cmd );
+
+//     pthread_mutex_lock( stdout_lock );
+//     printf( "%s: %s\n", name->str, line->str + MSG_LEN );
+//     fflush( stdout );
+//     pthread_mutex_unlock( stdout_lock );
+// }
+
 void *client_handler( void *temp )
 {
     ClientHandlerArg *arg = temp;
@@ -237,35 +291,39 @@ void *client_handler( void *temp )
         clean_up_client( &streams, &name, &line, arg );
         return 0;
     }
+    replace_unprintable( name.str );
+    ListNode *client_node = list_insert( arg->clients, &name, streams.tx, &streams.tx_lock );
+    send_enter( arg->clients, &name, arg->stdout_lock );
 
-    // ClientNode *node = get_client_node(arg->clients, name, arg->clientsLock);
-    // send_enter(arg->clients, name, arg->clientsLock, arg->stdoutLock); 
-    // int readsBeforeEof;
-    // String line;
-    // bool left = false;
-    // while (!left) {
-    //     line = get_line(from, &readsBeforeEof);
-    //     if (readsBeforeEof > -1) {
-    //         free(line.chars);
-    //         break;
-    //     }
-    //     if (!strncmp(line.chars, "SAY:", 4)) {
-    //         handle_say(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients, name, line.chars + 4,
-    //                 arg->stdoutLock);
-    //     } else if (!strncmp(line.chars, "KICK:", 5)) {
-    //         kick(node, arg->clientsLock, arg->stdoutLock, arg->received, arg->receivedLock, arg->clients, line.chars + 5);
-    //     } else if (!strncmp(line.chars, "LIST:", 5)) {
-    //         handle_list(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients);
-    //     } else if (!strncmp(line.chars, "LEAVE:", 6)) {
-    //         log_received(arg->received, arg->receivedLock, LEAVE);
-    //         left = true;
-    //     }
-    //     free(line.chars);
-    //     usleep(100000);
-    // }
-    // delete_client(arg->clients, name, arg->clientsLock);
-    // send_leave(arg->clients, name, arg->clientsLock, arg->stdoutLock);
+    enum ReadlineResult readline_res;
+    bool left = false;
+    while( !left )
+    {
+        readline_res = dynstring_readline( &line, streams.rx );
+        if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) break;
 
+        if( !strncmp( line.str, "SAY:", SAY_LEN ))
+        {
+            // handle_say(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients, name, line.chars + 4,
+            //         arg->stdoutLock);
+        }
+        // else if (!strncmp(line.str, "KICK:", KICK_LEN))
+        // {
+        //     kick(node, arg->clientsLock, arg->stdoutLock, arg->received, arg->receivedLock, arg->clients, line.chars + 5);
+        // }
+        // else if (!strncmp(line.str, "LIST:", LIST_LEN))
+        // {
+        //     handle_list(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients);
+        // }
+        else if( !strncmp( line.str, "LEAVE:", LEAVE_LEN ))
+        {
+            update_stats( arg->stats, RECV_LEAVE );
+            left = true;
+        }
+    }
+
+    send_leave( arg->clients, &name, arg->stdout_lock );
+    list_delete( arg->clients, name.str );
     clean_up_client( &streams, &name, &line, arg );
     return 0;
 }

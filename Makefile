@@ -39,7 +39,7 @@ target: client server
 client: $(OBJ)/client.o $(OBJ)/clientlib.o $(OBJ)/dynstring.o $(OBJ)/util.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 
-server: $(OBJ)/server.o $(OBJ)/serverlib.o $(OBJ)/dynstring.o $(OBJ)/list.o
+server: $(OBJ)/server.o $(OBJ)/serverlib.o $(OBJ)/dynstring.o $(OBJ)/util.o $(OBJ)/list.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 
 test%: CFLAGS += -g
@@ -59,6 +59,6 @@ test_clientlib: $(OBJ)/unity.o $(OBJ)/test_clientlib.o $(OBJ)/clientlib.o $(OBJ)
 	nc -4 -l 19224 &
 	$(VALGRIND) --log-file=$(BUILD)/$@_val.log $(BUILD)/$@
 
-test_serverlib: $(OBJ)/unity.o $(OBJ)/test_serverlib.o $(OBJ)/serverlib.o $(OBJ)/dynstring.o $(OBJ)/list.o
+test_serverlib: $(OBJ)/unity.o $(OBJ)/test_serverlib.o $(OBJ)/serverlib.o $(OBJ)/dynstring.o $(OBJ)/util.o $(OBJ)/list.o
 	$(CC) $(CFLAGS) $^ -o $(BUILD)/$@
 	$(VALGRIND) --log-file=$(BUILD)/$@_val.log $(BUILD)/$@
