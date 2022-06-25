@@ -4,22 +4,27 @@
 #include <strings.h>
 
 // If curr is tail -> append, else if ordered -> insert.
-#define INSERT_NODE( prev_next, curr )								\
-{																	\
-    if( curr == 0 )													\
-    {																\
-        prev_next = new_node;										\
-        new_node->next = 0; /* God bless valgrind */				\
-        pthread_mutex_unlock( &list->lock );						\
-        return new_node;											\
-    }																\
-    else if( strcasecmp( name->str, curr->data.name->str ) <= 0 )	\
-    {																\
-        new_node->next = curr;										\
-        prev_next = new_node;										\
-        pthread_mutex_unlock( &list->lock );						\
-        return new_node;											\
-    }																\
+#define INSERT_NODE( prev_next, curr )													\
+{																						\
+    if( curr == 0 )																		\
+    {																					\
+        prev_next = new_node;															\
+        new_node->next = 0; /* God bless valgrind */									\
+        pthread_mutex_unlock( &list->lock );											\
+        return true;																	\
+    }																					\
+    else if(( c = strcasecmp( new_node->data.name->str, curr->data.name->str )) == 0 )	\
+    {																					\
+        pthread_mutex_unlock( &list->lock );											\
+        return false;																	\
+    }																					\
+    else if( c < 0 )																	\
+    {																					\
+        new_node->next = curr;															\
+        prev_next = new_node;															\
+        pthread_mutex_unlock( &list->lock );											\
+        return true;																	\
+    }																					\
 }
 
 #define DELETE_NODE( prev_next, curr_next, target )	\
@@ -63,9 +68,8 @@ void list_destroy( ClientList *list )
     pthread_mutex_destroy( &list->lock );
 }
 
-ListNode *list_insert( ClientList *list, const DynString *name, FILE *tx, pthread_mutex_t *tx_lock )
+ListNode *list_node_init( const DynString *name, FILE *tx, pthread_mutex_t *tx_lock )
 {
-    // Create new node
     ListNode *new_node = malloc( sizeof(ListNode) );
     new_node->data = (ClientData)
     {
@@ -76,7 +80,12 @@ ListNode *list_insert( ClientList *list, const DynString *name, FILE *tx, pthrea
         .kick = 0,
         .list = 0,
     };
+    return new_node;
+}
 
+bool list_insert( ClientList *list, ListNode *new_node )
+{
+    int c;
     pthread_mutex_lock( &list->lock );
 
     // Head node edge-case
@@ -126,22 +135,6 @@ void list_delete( ClientList *list, const char *name )
             curr = curr->next;
         } while(1);
     }
-}
-
-bool check_name_in_use( ClientList *list, const char *name )
-{
-    bool in_use = false;
-    pthread_mutex_lock( &list->lock );
-
-    ListNode *curr = list->head;
-    while( curr != 0 && !in_use )
-    {
-        in_use = in_use || !strcmp( curr->data.name->str, name );
-        curr = curr->next;
-    }
-
-    pthread_mutex_unlock( &list->lock );
-    return in_use;
 }
 
 void list_send_to_node( ClientList *list, const char *name, const char *str )

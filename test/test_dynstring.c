@@ -33,6 +33,21 @@ void test_dynstring_nfrom( void )
     dynstring_destroy( &dname );
 }
 
+void test_dynstring_npush_empty( void )
+{
+    DynString sentence;
+    dynstring_nfrom( &sentence, "My favourite color is", 21, 23 );
+    TEST_ASSERT_EQUAL_STRING( "My favourite color is", sentence.str );
+    TEST_ASSERT_EQUAL( 21, sentence.length );
+    TEST_ASSERT_EQUAL( 23, sentence.size );
+
+    dynstring_npush( &sentence, "", 0 );
+    TEST_ASSERT_EQUAL_STRING( "My favourite color is", sentence.str );
+    TEST_ASSERT_EQUAL( 21, sentence.length );
+    TEST_ASSERT_EQUAL( 23, sentence.size );
+    dynstring_destroy( &sentence );
+}
+
 void test_dynstring_npush0( void )
 {
     dynstring_npush( &dstr, sentence, 9 );
@@ -307,6 +322,7 @@ int main( void )
     UNITY_BEGIN();
     RUN_TEST( test_dynstring_init );
     RUN_TEST( test_dynstring_nfrom );
+    RUN_TEST( test_dynstring_npush_empty );
     RUN_TEST( test_dynstring_npush0 );
     RUN_TEST( test_dynstring_npush1 );
     RUN_TEST( test_dynstring_npush2 );

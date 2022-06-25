@@ -188,28 +188,34 @@ bool negotiate_auth( const DynString *authdstr, ClientStreams *streams, Received
     } while(1);
 }
 
-bool negotiate_name( DynString *name, ClientStreams *streams, ReceivedStats *stats, ClientList *clients,
+ListNode *negotiate_name( DynString *name, ClientStreams *streams, ReceivedStats *stats, ClientList *clients,
     DynString *line )
 {
     enum ReadlineResult readline_res;
+    ListNode *client_node = list_node_init( name, streams->tx, &streams->tx_lock );
     write_flush_safe( "WHO:\n", streams->tx, &streams->tx_lock );
 
     do
     {
         readline_res = dynstring_readline( line, streams->rx );
-        if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
+        if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF )
+        {
+            free( client_node );
+            return NULL;
+        }
         if( !strncmp( line->str, "NAME:", NAME_LEN ))
         {
             update_stats( stats, RECV_NAME );
-            if( line->length == NAME_LEN || check_name_in_use( clients, line->str + NAME_LEN ))
+            dynstring_clear( name );
+            dynstring_npush( name, line->str + NAME_LEN, line->length - NAME_LEN );
+            if( line->length == NAME_LEN || !list_insert( clients, client_node ))
             {
                 write_flush_safe( "NAME_TAKEN:\n", streams->tx, &streams->tx_lock );
             }
             else
             {
-                dynstring_npush( name, line->str + NAME_LEN, line->length - NAME_LEN );
                 write_flush_safe( "OK:\n", streams->tx, &streams->tx_lock );
-                return true;
+                return client_node;
             }
         }
         write_flush_safe( "WHO:\n", streams->tx, &streams->tx_lock );
@@ -314,13 +320,13 @@ void *client_handler( void *temp )
     }
 
     // Negotiate name
-    if( !negotiate_name( &name, &streams, arg->stats, arg->clients, &line ))
+    ListNode *client_node;
+    if(( client_node = negotiate_name( &name, &streams, arg->stats, arg->clients, &line )) == NULL )
     {
         clean_up_client( &streams, &name, &line, arg );
         return 0;
     }
     replace_unprintable( name.str );
-    ListNode *client_node = list_insert( arg->clients, &name, streams.tx, &streams.tx_lock );
     send_enter( arg->clients, &name, arg->stdout_lock );
 
     enum ReadlineResult readline_res;

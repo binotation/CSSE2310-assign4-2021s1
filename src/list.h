@@ -55,19 +55,19 @@ void list_init( ClientList *list );
 void list_destroy( ClientList *list );
 
 /**
+ * Initialize list node.
+ */
+ListNode *list_node_init( const DynString *name, FILE *tx, pthread_mutex_t *tx_lock );
+
+/**
  * Insert a new client into a list.
  */
-ListNode *list_insert( ClientList *list, const DynString *name, FILE *tx, pthread_mutex_t *tx_lock );
+bool list_insert( ClientList *list, ListNode *node );
 
 /**
  * Delete a client identified by name.
  */
 void list_delete( ClientList *list, const char *name );
-
-/**
- * Check if name is already being used by a client.
- */
-bool check_name_in_use( ClientList *list, const char *name );
 
 // Specific-purpose functions
 /**

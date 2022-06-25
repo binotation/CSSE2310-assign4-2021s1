@@ -126,7 +126,7 @@ bool negotiate_auth( const DynString *authdstr, ClientStreams *streams, Received
  * Send WHO:. If reply NAME: with a name that is not in use then send OK: and return true; if name
  * in use, send NAME_TAKEN: and WHO: and repeat. If not replied NAME:, send WHO: again.
  */
-bool negotiate_name( DynString *name, ClientStreams *streams, ReceivedStats *stats, ClientList *clients,
+ListNode *negotiate_name( DynString *name, ClientStreams *streams, ReceivedStats *stats, ClientList *clients,
     DynString *line );
 
 /**

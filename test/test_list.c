@@ -4,26 +4,51 @@
 
 #define INSERT_DUMMY()										\
 {															\
+    ListNode *node;											\
     pthread_mutex_t lock0, lock1, lock2, lock3;				\
-    list_insert( &list, &names[1], (FILE*)1, &lock0 );		\
-    list_insert( &list, &names[0], (FILE*)2, &lock1 );		\
-    list_insert( &list, &names[2], (FILE*)3, &lock2 );		\
-    list_insert( &list, &names[3], (FILE*)4, &lock3 );		\
+    node = list_node_init( &names[1], (FILE*)1, &lock0 );	\
+    list_insert( &list, node );								\
+    node = list_node_init( &names[0], (FILE*)0, &lock1 );	\
+    list_insert( &list, node );								\
+    node = list_node_init( &names[2], (FILE*)2, &lock2 );	\
+    list_insert( &list, node );								\
+    node = list_node_init( &names[3], (FILE*)3, &lock3 );	\
+    list_insert( &list, node );								\
 }
 
 // Test permutation of order of inserting names.
 #define TEST_INSERT( name0, name1, name2, name3 )											\
 {																							\
-    ListNode *node;																			\
+    bool available;																			\
     pthread_mutex_t lock0, lock1, lock2, lock3;												\
-    node = list_insert( &list, &names[name0], (FILE*)1, &lock0 );							\
-    TEST_ASSERT_EQUAL_STRING( names[name0].str, node->data.name->str );						\
-    node = list_insert( &list, &names[name1], (FILE*)2, &lock1 );							\
-    TEST_ASSERT_EQUAL_STRING( names[name1].str, node->data.name->str );						\
-    node = list_insert( &list, &names[name2], (FILE*)3, &lock2 );							\
-    TEST_ASSERT_EQUAL_STRING( names[name2].str, node->data.name->str );						\
-    node = list_insert( &list, &names[name3], (FILE*)4, &lock3 );							\
-    TEST_ASSERT_EQUAL_STRING( names[name3].str, node->data.name->str );						\
+    FILE *tx0, *tx1, *tx2, *tx3;															\
+    tx0 = (FILE*)0; tx1 = (FILE*)1; tx2 = (FILE*)2; tx3 = (FILE*)3;							\
+    ListNode *node0, *node1, *node2, *node3;												\
+																							\
+    node0 = list_node_init( &names[name0], tx0, &lock0 );									\
+    available = list_insert( &list, node0 );												\
+    TEST_ASSERT_TRUE( available );															\
+																							\
+    node1 = list_node_init( &names[name1], tx1, &lock1 );									\
+    available = list_insert( &list, node1 );												\
+    TEST_ASSERT_TRUE( available );															\
+																							\
+    node2 = list_node_init( &names[name2], tx2, &lock2 );									\
+    available = list_insert( &list, node2 );												\
+    TEST_ASSERT_TRUE( available );															\
+																							\
+    node3 = list_node_init( &names[name3], tx3, &lock3 );									\
+    available = list_insert( &list, node3 );												\
+    TEST_ASSERT_TRUE( available );															\
+																							\
+    available = list_insert( &list, node0 );												\
+    TEST_ASSERT_FALSE( available );															\
+    available = list_insert( &list, node1 );												\
+    TEST_ASSERT_FALSE( available );															\
+    available = list_insert( &list, node2 );												\
+    TEST_ASSERT_FALSE( available );															\
+    available = list_insert( &list, node3 );												\
+    TEST_ASSERT_FALSE( available );															\
 																							\
     TEST_ASSERT_EQUAL_STRING( names[0].str, list.head->data.name->str );					\
     TEST_ASSERT_EQUAL_STRING( names[1].str, list.head->next->data.name->str );				\
@@ -127,16 +152,6 @@ void test_delete21( void ) { TEST_DELETE( 3, 1, 2, 0, 0, 1, 2, 0, 2, 0 ) }
 void test_delete22( void ) { TEST_DELETE( 3, 2, 0, 1, 0, 1, 2, 0, 1, 1 ) }
 void test_delete23( void ) { TEST_DELETE( 3, 2, 1, 0, 0, 1, 2, 0, 1, 0 ) }
 
-void test_in_use( void )
-{
-    INSERT_DUMMY()
-    TEST_ASSERT_TRUE( check_name_in_use( &list, names[0].str ));
-    TEST_ASSERT_TRUE( check_name_in_use( &list, names[1].str ));
-    TEST_ASSERT_TRUE( check_name_in_use( &list, names[2].str ));
-    TEST_ASSERT_TRUE( check_name_in_use( &list, names[3].str ));
-    TEST_ASSERT_FALSE( check_name_in_use( &list, "Kellan" ));
-}
-
 void test_list_send_to_node( void )
 {
     const char *str = "It isn't true that my mattress is made of cotton candy.";
@@ -144,12 +159,17 @@ void test_list_send_to_node( void )
     dynstring_init( &line, 20 );
 
     FILE *kingston_out = fopen( "build/test_list_send_to_node.out", "w+" );
+    ListNode *node;
     pthread_mutex_t lock0, lock1, lock2, lock3;
     pthread_mutex_init( &lock0, 0 );
-    list_insert( &list, &names[1], kingston_out, &lock0 );
-    list_insert( &list, &names[0], (FILE*)2, &lock1 );
-    list_insert( &list, &names[2], (FILE*)3, &lock2 );
-    list_insert( &list, &names[3], (FILE*)4, &lock3 );
+    node = list_node_init( &names[1], kingston_out, &lock0 );
+    list_insert( &list, node );
+    node = list_node_init( &names[0], (FILE*)0, &lock1 );
+    list_insert( &list, node );
+    node = list_node_init( &names[2], (FILE*)2, &lock2 );
+    list_insert( &list, node );
+    node = list_node_init( &names[3], (FILE*)3, &lock3 );
+    list_insert( &list, node );
 
     list_send_to_node( &list, names[1].str, str );
     rewind( kingston_out );
@@ -162,12 +182,17 @@ void test_list_send_to_node( void )
 
 void test_inc_stat( void )
 {
-    ListNode *nannie;
+    ListNode *node, *nannie;
     pthread_mutex_t lock0, lock1, lock2, lock3;
-    list_insert( &list, &names[1], (FILE*)1, &lock0 );
-    list_insert( &list, &names[0], (FILE*)2, &lock1 );
-    nannie = list_insert( &list, &names[2], (FILE*)3, &lock2 );
-    list_insert( &list, &names[3], (FILE*)4, &lock3 );
+    pthread_mutex_init( &lock0, 0 );
+    node = list_node_init( &names[1], (FILE*)1, &lock0 );
+    list_insert( &list, node );
+    node = list_node_init( &names[0], (FILE*)0, &lock1 );
+    list_insert( &list, node );
+    nannie = list_node_init( &names[2], (FILE*)2, &lock2 );
+    list_insert( &list, nannie );
+    node = list_node_init( &names[3], (FILE*)3, &lock3 );
+    list_insert( &list, node );
 
     TEST_ASSERT_EQUAL( 0, nannie->data.say );
     TEST_ASSERT_EQUAL( 0, nannie->data.kick );
@@ -200,6 +225,7 @@ void test_send_to_all( void )
     DynString line;
     dynstring_init( &line, 50 );
 
+    ListNode *node;
     pthread_mutex_t lock0, lock1, lock2, lock3;
     pthread_mutex_init( &lock0, 0 );
     pthread_mutex_init( &lock1, 0 );
@@ -210,10 +236,14 @@ void test_send_to_all( void )
     FILE *out2 = fopen( "build/test_send_to_all2.out", "w+" );
     FILE *out3 = fopen( "build/test_send_to_all3.out", "w+" );
 
-    list_insert( &list, &names[1], out1, &lock0 );
-    list_insert( &list, &names[0], out0, &lock1 );
-    list_insert( &list, &names[2], out2, &lock2 );
-    list_insert( &list, &names[3], out3, &lock3 );
+    node = list_node_init( &names[1], out1, &lock1 );
+    list_insert( &list, node );
+    node = list_node_init( &names[0], out0, &lock0 );
+    list_insert( &list, node );
+    node = list_node_init( &names[2], out2, &lock2 );
+    list_insert( &list, node );
+    node = list_node_init( &names[3], out3, &lock3 );
+    list_insert( &list, node );
 
     send_to_all( &list, test_str );
 
@@ -273,10 +303,14 @@ void test_list_print_stats( void )
 
     ListNode *clementine, *kingston, *nannie, *vicki;
     pthread_mutex_t lock0, lock1, lock2, lock3;
-    kingston = list_insert( &list, &names[1], (FILE*)1, &lock0 );
-    clementine = list_insert( &list, &names[0], (FILE*)2, &lock1 );
-    nannie = list_insert( &list, &names[2], (FILE*)3, &lock2 );
-    vicki = list_insert( &list, &names[3], (FILE*)4, &lock3 );
+    kingston = list_node_init( &names[1], (FILE*)1, &lock1 );
+    list_insert( &list, kingston );
+    clementine = list_node_init( &names[0], (FILE*)0, &lock0 );
+    list_insert( &list, clementine );
+    nannie = list_node_init( &names[2], (FILE*)2, &lock2 );
+    list_insert( &list, nannie );
+    vicki = list_node_init( &names[3], (FILE*)3, &lock3 );
+    list_insert( &list, vicki );
 
     for( i = 0; i < 9; i++ ) inc_stat( &list, clementine, 's' );
     for( i = 0; i < 17; i++ ) inc_stat( &list, clementine, 'k' );
@@ -373,7 +407,6 @@ int main( void )
     RUN_TEST( test_delete22 );
     RUN_TEST( test_delete23 );
 
-    RUN_TEST( test_in_use );
     RUN_TEST( test_list_send_to_node );
     RUN_TEST( test_inc_stat );
     RUN_TEST( test_send_to_all );
