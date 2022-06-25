@@ -69,12 +69,12 @@ void list_delete( ClientList *list, const char *name );
  */
 bool check_name_in_use( ClientList *list, const char *name );
 
-/**
- * Retrieve a node reference identified by client name. If not found, NULL is returned.
- */
-ListNode *get_node( ClientList *list, const char *name );
-
 // Specific-purpose functions
+/**
+ * Write str to node tx stream.
+ */
+void list_send_to_node( ClientList *list, const char *name, const char *str );
+
 /**
  * Increment a client's stat given its node.
  * @param stat	the stat to increment: 's' -> SAY:, 'k' -> KICK:, 'l' -> LIST:

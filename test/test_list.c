@@ -137,43 +137,61 @@ void test_in_use( void )
     TEST_ASSERT_FALSE( check_name_in_use( &list, "Kellan" ));
 }
 
-void test_get_node( void )
+void test_list_send_to_node( void )
 {
-    INSERT_DUMMY()
-    TEST_ASSERT_EQUAL_STRING( names[0].str, get_node( &list, names[0].str )->data.name->str );
-    TEST_ASSERT_EQUAL_STRING( names[1].str, get_node( &list, names[1].str )->data.name->str );
-    TEST_ASSERT_EQUAL_STRING( names[2].str, get_node( &list, names[2].str )->data.name->str );
-    TEST_ASSERT_EQUAL_STRING( names[3].str, get_node( &list, names[3].str )->data.name->str );
-    TEST_ASSERT_EQUAL( 0, get_node( &list, "Kellan" ));
+    const char *str = "It isn't true that my mattress is made of cotton candy.";
+    DynString line;
+    dynstring_init( &line, 20 );
+
+    FILE *kingston_out = fopen( "build/test_list_send_to_node.out", "w+" );
+    pthread_mutex_t lock0, lock1, lock2, lock3;
+    pthread_mutex_init( &lock0, 0 );
+    list_insert( &list, &names[1], kingston_out, &lock0 );
+    list_insert( &list, &names[0], (FILE*)2, &lock1 );
+    list_insert( &list, &names[2], (FILE*)3, &lock2 );
+    list_insert( &list, &names[3], (FILE*)4, &lock3 );
+
+    list_send_to_node( &list, names[1].str, str );
+    rewind( kingston_out );
+    dynstring_readline( &line, kingston_out );
+    TEST_ASSERT_EQUAL_STRING( str, line.str );
+
+    fclose( kingston_out );
+    dynstring_destroy( &line );
 }
 
 void test_inc_stat( void )
 {
-    INSERT_DUMMY()
-    ListNode *client = get_node( &list, names[2].str );
-    TEST_ASSERT_EQUAL( 0, client->data.say );
-    TEST_ASSERT_EQUAL( 0, client->data.kick );
-    TEST_ASSERT_EQUAL( 0, client->data.list );
+    ListNode *nannie;
+    pthread_mutex_t lock0, lock1, lock2, lock3;
+    list_insert( &list, &names[1], (FILE*)1, &lock0 );
+    list_insert( &list, &names[0], (FILE*)2, &lock1 );
+    nannie = list_insert( &list, &names[2], (FILE*)3, &lock2 );
+    list_insert( &list, &names[3], (FILE*)4, &lock3 );
 
-    inc_stat( &list, client, 's' );
-    TEST_ASSERT_EQUAL( 1, client->data.say );
-    TEST_ASSERT_EQUAL( 0, client->data.kick );
-    TEST_ASSERT_EQUAL( 0, client->data.list );
+    TEST_ASSERT_EQUAL( 0, nannie->data.say );
+    TEST_ASSERT_EQUAL( 0, nannie->data.kick );
+    TEST_ASSERT_EQUAL( 0, nannie->data.list );
 
-    inc_stat( &list, client, 'k' );
-    TEST_ASSERT_EQUAL( 1, client->data.say );
-    TEST_ASSERT_EQUAL( 1, client->data.kick );
-    TEST_ASSERT_EQUAL( 0, client->data.list );
+    inc_stat( &list, nannie, 's' );
+    TEST_ASSERT_EQUAL( 1, nannie->data.say );
+    TEST_ASSERT_EQUAL( 0, nannie->data.kick );
+    TEST_ASSERT_EQUAL( 0, nannie->data.list );
 
-    inc_stat( &list, client, 'l' );
-    TEST_ASSERT_EQUAL( 1, client->data.say );
-    TEST_ASSERT_EQUAL( 1, client->data.kick );
-    TEST_ASSERT_EQUAL( 1, client->data.list );
+    inc_stat( &list, nannie, 'k' );
+    TEST_ASSERT_EQUAL( 1, nannie->data.say );
+    TEST_ASSERT_EQUAL( 1, nannie->data.kick );
+    TEST_ASSERT_EQUAL( 0, nannie->data.list );
 
-    inc_stat( &list, client, 'o' );
-    TEST_ASSERT_EQUAL( 1, client->data.say );
-    TEST_ASSERT_EQUAL( 1, client->data.kick );
-    TEST_ASSERT_EQUAL( 1, client->data.list );
+    inc_stat( &list, nannie, 'l' );
+    TEST_ASSERT_EQUAL( 1, nannie->data.say );
+    TEST_ASSERT_EQUAL( 1, nannie->data.kick );
+    TEST_ASSERT_EQUAL( 1, nannie->data.list );
+
+    inc_stat( &list, nannie, 'o' );
+    TEST_ASSERT_EQUAL( 1, nannie->data.say );
+    TEST_ASSERT_EQUAL( 1, nannie->data.kick );
+    TEST_ASSERT_EQUAL( 1, nannie->data.list );
 }
 
 void test_send_to_all( void )
@@ -252,12 +270,13 @@ void test_list_print_stats( void )
     unsigned int i;
     DynString line;
     dynstring_init( &line, 32 );
-    INSERT_DUMMY()
 
-    ListNode *clementine = get_node( &list, names[0].str );
-    ListNode *kingston = get_node( &list, names[1].str );
-    ListNode *nannie = get_node( &list, names[2].str );
-    ListNode *vicki = get_node( &list, names[3].str );
+    ListNode *clementine, *kingston, *nannie, *vicki;
+    pthread_mutex_t lock0, lock1, lock2, lock3;
+    kingston = list_insert( &list, &names[1], (FILE*)1, &lock0 );
+    clementine = list_insert( &list, &names[0], (FILE*)2, &lock1 );
+    nannie = list_insert( &list, &names[2], (FILE*)3, &lock2 );
+    vicki = list_insert( &list, &names[3], (FILE*)4, &lock3 );
 
     for( i = 0; i < 9; i++ ) inc_stat( &list, clementine, 's' );
     for( i = 0; i < 17; i++ ) inc_stat( &list, clementine, 'k' );
@@ -355,7 +374,7 @@ int main( void )
     RUN_TEST( test_delete23 );
 
     RUN_TEST( test_in_use );
-    RUN_TEST( test_get_node );
+    RUN_TEST( test_list_send_to_node );
     RUN_TEST( test_inc_stat );
     RUN_TEST( test_send_to_all );
     RUN_TEST( test_get_names_list0 );

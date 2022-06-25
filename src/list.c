@@ -144,7 +144,7 @@ bool check_name_in_use( ClientList *list, const char *name )
     return in_use;
 }
 
-ListNode *get_node( ClientList *list, const char *name )
+void list_send_to_node( ClientList *list, const char *name, const char *str )
 {
     pthread_mutex_lock( &list->lock );
 
@@ -153,9 +153,15 @@ ListNode *get_node( ClientList *list, const char *name )
     {
         curr = curr->next;
     }
+    if( curr != 0 )
+    {
+        pthread_mutex_lock( curr->data.tx_lock );
+        fputs( str, curr->data.tx );
+        fflush( curr->data.tx );
+        pthread_mutex_unlock( curr->data.tx_lock );
+    }
 
     pthread_mutex_unlock( &list->lock );
-    return curr;
 }
 
 void inc_stat( ClientList *list, ListNode *client, const char stat )
