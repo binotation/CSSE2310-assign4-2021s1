@@ -144,7 +144,9 @@ static void update_stats( ReceivedStats *stats, enum ReceivedType type )
 static void clean_up_client( ClientStreams *streams, DynString *name, DynString *line,
     void *arg )
 {
+    pthread_mutex_lock( &streams->tx_lock );
     fclose( streams->tx );
+    pthread_mutex_unlock( &streams->tx_lock );
     fclose( streams->rx );
     dynstring_destroy( name );
     dynstring_destroy( line );
@@ -242,28 +244,54 @@ static void send_leave( ClientList *clients, const DynString *name, pthread_mute
     pthread_mutex_unlock( stdout_lock );
 }
 
-// static void handle_say( ListNode *client, ClientList *clients, ReceivedStats *stats,
-//     const DynString *name, DynString *line, pthread_mutex_t *stdout_lock )
-// {
-//     inc_stat( clients, client, 's' );
-//     update_stats( stats, RECV_SAY );
+static void handle_say( ListNode *client, ClientList *clients, ReceivedStats *stats,
+    const DynString *name, DynString *line, pthread_mutex_t *stdout_lock )
+{
+    inc_stat( clients, client, 's' );
+    update_stats( stats, RECV_SAY );
 
-//     char *msg = line->str + SAY_LEN;
-//     unsigned int msg_length = line->length - SAY_LEN;
-//     replace_unprintable( msg );
+    char *msg = line->str + SAY_LEN;
+    unsigned int msg_length = line->length - SAY_LEN;
+    replace_unprintable( msg );
 
-//     // Construct cmd to send
-//     // strlen( "MSG:" ) + strlen( name + ':' ) + strlen( message ) + strlen( "\n\0" )
-//     char *cmd = malloc( sizeof(char) * ( MSG_LEN + msg_length + 3 ));
-//     sprintf( cmd, "MSG:%s:%s\n", name->str, msg );
-//     send_to_all( clients, cmd );
-//     free( cmd );
+    // Construct cmd to send
+    // strlen( "MSG:" ) + strlen( name + ':' ) + strlen( message ) + strlen( "\n\0" )
+    char *cmd = malloc( sizeof(char) * ( MSG_LEN + name->length + 1 + msg_length + 2 ));
+    sprintf( cmd, "MSG:%s:%s\n", name->str, msg );
+    send_to_all( clients, cmd );
+    free( cmd );
 
-//     pthread_mutex_lock( stdout_lock );
-//     printf( "%s: %s\n", name->str, line->str + MSG_LEN );
-//     fflush( stdout );
-//     pthread_mutex_unlock( stdout_lock );
-// }
+    pthread_mutex_lock( stdout_lock );
+    printf( "%s: %s\n", name->str, msg );
+    fflush( stdout );
+    pthread_mutex_unlock( stdout_lock );
+}
+
+static void kick( ListNode *client, ClientList *clients, ReceivedStats *stats, DynString *line )
+{
+    inc_stat( clients, client, 'k' );
+    update_stats( stats, RECV_KICK );
+
+    char *name = line->str + KICK_LEN;
+    list_send_to_node( clients, name, "KICK:\n" );
+}
+
+static void handle_list( ListNode *client, ClientList *clients, ReceivedStats *stats )
+{
+    inc_stat( clients, client, 'l' );
+    update_stats( stats, RECV_LIST );
+
+    DynString names;
+    dynstring_init( &names, 20 );
+    get_names_list( clients, &names );
+
+    pthread_mutex_lock( client->data.tx_lock );
+    fprintf( client->data.tx, "LIST:%s\n", names.str );
+    fflush( client->data.tx );
+    pthread_mutex_unlock( client->data.tx_lock );
+
+    dynstring_destroy( &names );
+}
 
 void *client_handler( void *temp )
 {
@@ -304,17 +332,16 @@ void *client_handler( void *temp )
 
         if( !strncmp( line.str, "SAY:", SAY_LEN ))
         {
-            // handle_say(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients, name, line.chars + 4,
-            //         arg->stdoutLock);
+            handle_say( client_node, arg->clients, arg->stats, &name, &line, arg->stdout_lock );
         }
-        // else if (!strncmp(line.str, "KICK:", KICK_LEN))
-        // {
-        //     kick(node, arg->clientsLock, arg->stdoutLock, arg->received, arg->receivedLock, arg->clients, line.chars + 5);
-        // }
-        // else if (!strncmp(line.str, "LIST:", LIST_LEN))
-        // {
-        //     handle_list(node, arg->clientsLock, arg->received, arg->receivedLock, arg->clients);
-        // }
+        else if( !strncmp( line.str, "KICK:", KICK_LEN ))
+        {
+            kick( client_node, arg->clients, arg->stats, &line );
+        }
+        else if( !strncmp( line.str, "LIST:", LIST_LEN ))
+        {
+            handle_list( client_node, arg->clients, arg->stats );
+        }
         else if( !strncmp( line.str, "LEAVE:", LEAVE_LEN ))
         {
             update_stats( arg->stats, RECV_LEAVE );
