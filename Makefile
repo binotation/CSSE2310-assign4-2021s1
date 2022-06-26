@@ -13,7 +13,7 @@ VALGRIND := valgrind -s --leak-check=full --show-leak-kinds=all --track-origins=
 # include directories
 TESTINC = -I$(SRC) -I$(UNITY)
 
-.PHONY: $(shell mkdir -p obj) $(shell mkdir -p build) clean target test
+.PHONY: $(shell mkdir -p obj) $(shell mkdir -p build) clean debug target test
 .DEFAULT_GOAL := target
 
 # rule to build .o from src/
