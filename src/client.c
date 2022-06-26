@@ -53,7 +53,7 @@ int main( int argc, char **argv )
 
     bool exited = false;
     pthread_t server_handler;
-    pthread_create( &server_handler, 0, handle_server_comm, (void*)server.read );
+    pthread_create( &server_handler, 0, handle_server_comm, (void*)server.rx );
 
     enum ReadlineResult readline_res;
 
@@ -62,22 +62,22 @@ int main( int argc, char **argv )
         if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) break;
         if ( line.str[0] == '*' )
         {
-            fprintf( server.write, "%s\n", line.str + 1 );
+            fprintf( server.tx, "%s\n", line.str + 1 );
             if ( !strncmp( line.str + 1, "LEAVE:", 6 )) exited = true;
         }
         else
         {
-            fprintf( server.write, "SAY:%s\n", line.str );
+            fprintf( server.tx, "SAY:%s\n", line.str );
         }
-        fflush(server.write);
+        fflush( server.tx );
     } while ( !exited );
 
     pthread_cancel( server_handler );
     pthread_join( server_handler, 0 );
 
     dynstring_destroy( &line );
-    fclose( server.read );
-    fclose( server.write );
+    fclose( server.rx );
+    fclose( server.tx );
 
     return NO_ERR;
 }

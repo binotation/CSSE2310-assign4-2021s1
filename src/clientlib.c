@@ -25,7 +25,7 @@ enum GetArgsResult get_args( Args *args, int argc, char **argv )
             args->port = argv[4];
     }
 
-    fclose(authfile);
+    fclose( authfile );
     return GET_ARGS_SUCCESS;
 }
 
@@ -39,14 +39,14 @@ enum GetConnResult get_connection( const char *host, const char *port, ServerStr
 
     if( getaddrinfo( host, port, &hints, &res )) return GET_CONN_HOST_INVALID;
     int server_fd = socket( AF_INET, SOCK_STREAM, 0 );
-    if( connect( server_fd, (struct sockaddr*)res->ai_addr, sizeof(struct sockaddr)))
+    if( connect( server_fd, (struct sockaddr*)res->ai_addr, sizeof(struct sockaddr) ))
     {
         freeaddrinfo( res );
         return GET_CONN_COMM_ERR;
     }
     int write_fd = dup( server_fd );
-    server->read = fdopen( server_fd, "r" );
-    server->write = fdopen( write_fd, "w" );
+    server->rx = fdopen( server_fd, "r" );
+    server->tx = fdopen( write_fd, "w" );
     freeaddrinfo( res );
     return GET_CONN_SUCCESS;
 }
@@ -58,22 +58,25 @@ bool negotiate_auth( const ServerStreams *server, const char *authstr, DynString
 
     do
     {
-        readline_res = dynstring_readline( line, server->read );
+        readline_res = dynstring_readline( line, server->rx );
         if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
-        if( !strncmp( line->str, "AUTH:", 5 ) )
+        if( !strncmp( line->str, "AUTH:", 5 ))
         {
-            fprintf( server->write, "AUTH:%s\n", authstr );
-            fflush( server->write );
+            fprintf( server->tx, "AUTH:%s\n", authstr );
+            fflush( server->tx );
             do
             {
-                readline_res = dynstring_readline( line, server->read );
+                readline_res = dynstring_readline( line, server->rx );
                 if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
-                if( !strncmp( line->str, "AUTH:", 5 ) )
+                if( !strncmp( line->str, "AUTH:", 5 ))
                 {
-                    fprintf( server->write, "AUTH:%s\n", authstr );
-                    fflush( server->write );
+                    fprintf( server->tx, "AUTH:%s\n", authstr );
+                    fflush( server->tx );
                 }
-                else if( !strncmp(line->str, "OK:", 3) ) authenticated = true;
+                else if( !strncmp(line->str, "OK:", 3 ))
+                {
+                    authenticated = true;
+                }
             } while( !authenticated );
         }
     } while( !authenticated );
@@ -81,17 +84,20 @@ bool negotiate_auth( const ServerStreams *server, const char *authstr, DynString
     return true;
 }
 
-void send_name( FILE *write, const ClientName *name )
+/**
+ * Send NAME:client_name%d to the server.
+ */
+static void send_name( FILE *tx, const ClientName *name )
 {
     switch( name->num )
     {
         case -1:
-            fprintf( write, "NAME:%s\n", name->name );
+            fprintf( tx, "NAME:%s\n", name->name );
             break;
         default:
-            fprintf( write, "NAME:%s%d\n", name->name, name->num );
+            fprintf( tx, "NAME:%s%d\n", name->name, name->num );
     }
-    fflush( write );
+    fflush( tx );
 }
 
 bool negotiate_name( const ServerStreams *server, ClientName *name, DynString *line )
@@ -101,18 +107,27 @@ bool negotiate_name( const ServerStreams *server, ClientName *name, DynString *l
 
     do
     {
-        readline_res = dynstring_readline( line, server->read );
+        readline_res = dynstring_readline( line, server->rx );
         if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
-        if( !strncmp( line->str, "WHO:", 4 ) )
+        if( !strncmp( line->str, "WHO:", 4 ))
         {
-            send_name( server->write, name );
+            send_name( server->tx, name );
             do
             {
-                readline_res = dynstring_readline( line, server->read );
+                readline_res = dynstring_readline( line, server->rx );
                 if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF ) return false;
-                if( !strncmp( line->str, "WHO:", 4 )) send_name( server->write, name );
-                else if( !strncmp( line->str, "NAME_TAKEN:", 11 )) name->num++;
-                else if( !strncmp( line->str, "OK:", 3 )) accepted = true;
+                if( !strncmp( line->str, "WHO:", 4 ))
+                {
+                    send_name( server->tx, name );
+                }
+                else if( !strncmp( line->str, "NAME_TAKEN:", 11 ))
+                {
+                    name->num++;
+                }
+                else if( !strncmp( line->str, "OK:", 3 ))
+                {
+                    accepted = true;
+                }
             } while ( !accepted );
         }
     } while ( !accepted );
@@ -120,17 +135,20 @@ bool negotiate_name( const ServerStreams *server, ClientName *name, DynString *l
     return true;
 }
 
+/**
+ * Print "name: message" from arg1 and arg2 of targs.
+ */
 static void handle_msg( TwoArgs *targs )
 {
     fwrite( targs->arg1.str, targs->arg1.length, sizeof(char), stdout );
-    fputs(": ", stdout);
+    fwrite( ": ", 2, sizeof(char), stdout );
     fwrite( targs->arg2.str, targs->arg2.length, sizeof(char), stdout );
-    fputs("\n", stdout);
+    fwrite( "\n", 1, sizeof(char), stdout );
 }
 
 void *handle_server_comm( void *arg )
 {
-    FILE *read = (FILE*)arg;
+    FILE *rx = (FILE*)arg;
     DynString line;
     dynstring_init( &line, 20 );
     enum ReadlineResult readline_res;
@@ -139,7 +157,7 @@ void *handle_server_comm( void *arg )
 
     while ( exit_status == 0 )
     {
-        readline_res = dynstring_readline( &line, read );
+        readline_res = dynstring_readline( &line, rx );
         if( readline_res == READLINE_ERROR || readline_res == READLINE_EOF )
         {
             exit_status = COMM_ERR;

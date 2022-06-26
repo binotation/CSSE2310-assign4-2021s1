@@ -4,6 +4,7 @@
 #include "dynstring.h"
 #include <stdbool.h>
 
+// Error messages
 #define USAGE "Usage: client name authfile [host] port\n"
 #define AUTHFILE_ERR_MSG "Authfile error\n"
 #define HOST_ERR_MSG "Host/port invalid\n"
@@ -11,7 +12,7 @@
 #define AUTH_ERR_MSG "Authentication error\n"
 #define KICKED_MSG "Kicked\n"
 
-// Client exit codes
+// Exit codes
 #define NO_ERR 0
 #define ARGS_ERR 1
 #define AUTHFILE_ERR 2
@@ -20,16 +21,27 @@
 #define AUTH_ERR 5
 #define KICKED 6
 
+// Initialize ClientName
 #define CLIENTNAME_INIT( var, chosen_name ) ClientName var = { .name = chosen_name, .num = -1 }
 
-// The client's name as accepted by the server.
+/**
+ * The client's name as accepted by the server.
+ * @param .name	the chosen name
+ * @param .num	appended integer, num >= -1. If num = -1, don't append.
+ */
 typedef struct
 {
     char *name;
     int num;
 } ClientName;
 
-// User args
+/**
+ * User args
+ * @param .chosen_name	the chosen name
+ * @param .authdstr		auth string as dynstring
+ * @param .host			host address as string
+ * @param .port			port as string
+ */
 typedef struct
 {
     char *chosen_name;
@@ -38,11 +50,15 @@ typedef struct
     char *port;
 } Args;
 
-// Server read/write streams.
+/**
+ * Server read/write streams.
+ * @param rx	receive stream
+ * @param tx	transmit stream
+ */
 typedef struct
 {
-    FILE *read;
-    FILE *write;
+    FILE *rx;
+    FILE *tx;
 } ServerStreams;
 
 enum GetArgsResult
@@ -72,20 +88,14 @@ enum GetArgsResult get_args( Args *args, int argc, char **argv );
 enum GetConnResult get_connection( const char *host, const char *port, ServerStreams *server );
 
 /**
- * Auth handshake. First receive AUTH:, reply with AUTH:authstr, and receive OK: if handshake
- * success. Otherwise, repeat.
+ * Auth handshake. See architecture.md.
+ * @returns	if handshake was successful
  */
 bool negotiate_auth( const ServerStreams *server, const char *authstr, DynString *line );
 
 /**
- * Send client name over write stream.
- */
-void send_name( FILE *write, const ClientName *name );
-
-/**
- * Name handshake. First receive WHO:, reply with NAME:chosen_name, receive OK: if handshake
- * success, or NAME_TAKEN: if name is taken. If name is taken then concatenate uint to the name and
- * increment until handshake succeeds.
+ * Name handshake. See architecture.md.
+ * @returns if handshake was successful
  */
 bool negotiate_name( const ServerStreams *server, ClientName *name, DynString *line );
 
