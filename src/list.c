@@ -3,38 +3,6 @@
 #include <string.h>
 #include <strings.h>
 
-// If curr is tail -> append, else if ordered -> insert.
-#define INSERT_NODE( prev_next, curr )													\
-{																						\
-    if( curr == 0 )																		\
-    {																					\
-        prev_next = new_node;															\
-        new_node->next = 0; /* God bless valgrind */									\
-        pthread_mutex_unlock( &list->lock );											\
-        return true;																	\
-    }																					\
-    else if(( c = strcasecmp( new_node->data.name->str, curr->data.name->str )) == 0 )	\
-    {																					\
-        pthread_mutex_unlock( &list->lock );											\
-        return false;																	\
-    }																					\
-    else if( c < 0 )																	\
-    {																					\
-        new_node->next = curr;															\
-        prev_next = new_node;															\
-        pthread_mutex_unlock( &list->lock );											\
-        return true;																	\
-    }																					\
-}
-
-#define DELETE_NODE( prev_next, curr_next, target )	\
-{													\
-    prev_next = curr_next;							\
-    free( target );									\
-    pthread_mutex_unlock( &list->lock );			\
-    return;											\
-}
-
 void list_init( ClientList *list )
 {
     list->head = 0;
@@ -83,6 +51,30 @@ ListNode *list_node_init( const DynString *name, FILE *tx, pthread_mutex_t *tx_l
     return new_node;
 }
 
+// If curr is tail -> append, else if ordered -> insert.
+#define INSERT_NODE( prev_next, curr )													\
+{																						\
+    if( curr == 0 )																		\
+    {																					\
+        prev_next = new_node;															\
+        new_node->next = 0; /* God bless valgrind */									\
+        pthread_mutex_unlock( &list->lock );											\
+        return true;																	\
+    }																					\
+    else if(( c = strcasecmp( new_node->data.name->str, curr->data.name->str )) == 0 )	\
+    {																					\
+        pthread_mutex_unlock( &list->lock );											\
+        return false;																	\
+    }																					\
+    else if( c < 0 )																	\
+    {																					\
+        new_node->next = curr;															\
+        prev_next = new_node;															\
+        pthread_mutex_unlock( &list->lock );											\
+        return true;																	\
+    }																					\
+}
+
 bool list_insert( ClientList *list, ListNode *new_node )
 {
     int c;
@@ -99,6 +91,14 @@ bool list_insert( ClientList *list, ListNode *new_node )
         curr = curr->next;
         prev = prev->next;
     } while(1);
+}
+
+#define DELETE_NODE( prev_next, curr_next, target )	\
+{													\
+    prev_next = curr_next;							\
+    free( target );									\
+    pthread_mutex_unlock( &list->lock );			\
+    return;											\
 }
 
 void list_delete( ClientList *list, const char *name )
@@ -157,9 +157,8 @@ void list_send_to_node( ClientList *list, const char *name, const char *str )
     pthread_mutex_unlock( &list->lock );
 }
 
-void inc_stat( ClientList *list, ListNode *client, const char stat )
+void list_inc_stat( ListNode *client, const char stat )
 {
-    pthread_mutex_lock( &list->lock );
     switch( stat )
     {
         case 's':
@@ -171,11 +170,9 @@ void inc_stat( ClientList *list, ListNode *client, const char stat )
         case 'l':
             client->data.list++;
     }
-    pthread_mutex_unlock( &list->lock );
 }
 
-// Avoid deadlock by ensuring nothing holds a tx_lock while trying to lock a list->lock.
-void send_to_all( ClientList *list, const char *str )
+void list_send_to_all( ClientList *list, const char *str )
 {
     pthread_mutex_lock( &list->lock );
 
@@ -194,7 +191,7 @@ void send_to_all( ClientList *list, const char *str )
     pthread_mutex_unlock( &list->lock );
 }
 
-void get_names_list( ClientList *list, DynString *names )
+void list_get_names_list( ClientList *list, DynString *names )
 {
     dynstring_clear( names );
     pthread_mutex_lock( &list->lock );

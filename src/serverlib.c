@@ -227,7 +227,7 @@ static void send_enter( ClientList *clients, const DynString *name, pthread_mute
     // strlen( "ENTER:" ) + strlen( name ) + strlen( "\n\0" )
     char *cmd = malloc( sizeof(char) * ( ENTER_LEN + name->length + 2 ));
     sprintf( cmd, "ENTER:%s\n", name->str );
-    send_to_all( clients, cmd );
+    list_send_to_all( clients, cmd );
     free( cmd );
 
     pthread_mutex_lock( stdout_lock );
@@ -241,7 +241,7 @@ static void send_leave( ClientList *clients, const DynString *name, pthread_mute
     // strlen( "LEAVE:" ) + strlen( name ) + strlen( "\n\0" )
     char *cmd = malloc( sizeof(char) * ( LEAVE_LEN + name->length + 2 ));
     sprintf( cmd, "LEAVE:%s\n", name->str );
-    send_to_all( clients, cmd );
+    list_send_to_all( clients, cmd );
     free( cmd );
 
     pthread_mutex_lock( stdout_lock );
@@ -253,7 +253,7 @@ static void send_leave( ClientList *clients, const DynString *name, pthread_mute
 static void handle_say( ListNode *client, ClientList *clients, ReceivedStats *stats,
     const DynString *name, DynString *line, pthread_mutex_t *stdout_lock )
 {
-    inc_stat( clients, client, 's' );
+    list_inc_stat( client, 's' );
     update_stats( stats, RECV_SAY );
 
     char *msg = line->str + SAY_LEN;
@@ -264,7 +264,7 @@ static void handle_say( ListNode *client, ClientList *clients, ReceivedStats *st
     // strlen( "MSG:" ) + strlen( name + ':' ) + strlen( message ) + strlen( "\n\0" )
     char *cmd = malloc( sizeof(char) * ( MSG_LEN + name->length + 1 + msg_length + 2 ));
     sprintf( cmd, "MSG:%s:%s\n", name->str, msg );
-    send_to_all( clients, cmd );
+    list_send_to_all( clients, cmd );
     free( cmd );
 
     pthread_mutex_lock( stdout_lock );
@@ -275,7 +275,7 @@ static void handle_say( ListNode *client, ClientList *clients, ReceivedStats *st
 
 static void kick( ListNode *client, ClientList *clients, ReceivedStats *stats, DynString *line )
 {
-    inc_stat( clients, client, 'k' );
+    list_inc_stat( client, 'k' );
     update_stats( stats, RECV_KICK );
 
     char *name = line->str + KICK_LEN;
@@ -284,12 +284,12 @@ static void kick( ListNode *client, ClientList *clients, ReceivedStats *stats, D
 
 static void handle_list( ListNode *client, ClientList *clients, ReceivedStats *stats )
 {
-    inc_stat( clients, client, 'l' );
+    list_inc_stat( client, 'l' );
     update_stats( stats, RECV_LIST );
 
     DynString names;
     dynstring_init( &names, 20 );
-    get_names_list( clients, &names );
+    list_get_names_list( clients, &names );
 
     pthread_mutex_lock( client->data.tx_lock );
     fprintf( client->data.tx, "LIST:%s\n", names.str );

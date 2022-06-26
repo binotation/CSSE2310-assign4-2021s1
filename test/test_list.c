@@ -2,23 +2,11 @@
 #include "list.h"
 #include "dynstring.h"
 
-#define INSERT_DUMMY()										\
-{															\
-    ListNode *node;											\
-    pthread_mutex_t lock0, lock1, lock2, lock3;				\
-    node = list_node_init( &names[1], (FILE*)1, &lock0 );	\
-    list_insert( &list, node );								\
-    node = list_node_init( &names[0], (FILE*)0, &lock1 );	\
-    list_insert( &list, node );								\
-    node = list_node_init( &names[2], (FILE*)2, &lock2 );	\
-    list_insert( &list, node );								\
-    node = list_node_init( &names[3], (FILE*)3, &lock3 );	\
-    list_insert( &list, node );								\
-}
-
 // Test permutation of order of inserting names.
 #define TEST_INSERT( name0, name1, name2, name3 )											\
 {																							\
+    ClientList list;																		\
+    list_init( &list );																		\
     bool available;																			\
     pthread_mutex_t lock0, lock1, lock2, lock3;												\
     FILE *tx0, *tx1, *tx2, *tx3;															\
@@ -54,13 +42,12 @@
     TEST_ASSERT_EQUAL_STRING( names[1].str, list.head->next->data.name->str );				\
     TEST_ASSERT_EQUAL_STRING( names[2].str, list.head->next->next->data.name->str );		\
     TEST_ASSERT_EQUAL_STRING( names[3].str, list.head->next->next->next->data.name->str );	\
+    list_destroy( &list );																	\
 }
 
 // Test permutation of order of deleting names.
 #define TEST_DELETE( name0, name1, name2, name3, ord11, ord12, ord13, ord21, ord22, ord31 )	\
 {																							\
-    INSERT_DUMMY()																			\
-																							\
     list_delete( &list, names[name0].str );													\
     TEST_ASSERT_EQUAL_STRING( names[ord11].str, list.head->data.name->str );				\
     TEST_ASSERT_EQUAL_STRING( names[ord12].str, list.head->next->data.name->str );			\
@@ -79,20 +66,53 @@
 
 static ClientList list;
 static DynString names[4];
+static FILE *tx[4];
+static pthread_mutex_t tx_lock[4];
+static ListNode *nodes[4];
+static DynString line;
 
 void setUp( void )
 {
+    tx[0] = fopen( "build/test_list_clementine.out", "w+" );
+    tx[1] = fopen( "build/test_list_kingston.out", "w+" );
+    tx[2] = fopen( "build/test_list_nannie.out", "w+" );
+    tx[3] = fopen( "build/test_list_vicki.out", "w+" );
+    pthread_mutex_init( &tx_lock[0], 0 );
+    pthread_mutex_init( &tx_lock[1], 0 );
+    pthread_mutex_init( &tx_lock[2], 0 );
+    pthread_mutex_init( &tx_lock[3], 0 );
     list_init( &list );
+    nodes[1] = list_node_init( &names[1], tx[1], &tx_lock[1] );
+    list_insert( &list, nodes[1] );
+    nodes[0] = list_node_init( &names[0], tx[0], &tx_lock[0] );
+    list_insert( &list, nodes[0] );
+    nodes[2] = list_node_init( &names[2], tx[2], &tx_lock[2] );
+    list_insert( &list, nodes[2] );
+    nodes[3] = list_node_init( &names[3], tx[3], &tx_lock[3] );
+    list_insert( &list, nodes[3] );
+    dynstring_init( &line, 50 );
 }
 
 void tearDown( void )
 {
+    dynstring_destroy( &line );
     list_destroy( &list );
+    pthread_mutex_destroy( &tx_lock[0] );
+    pthread_mutex_destroy( &tx_lock[1] );
+    pthread_mutex_destroy( &tx_lock[2] );
+    pthread_mutex_destroy( &tx_lock[3] );
+    fclose( tx[0] );
+    fclose( tx[1] );
+    fclose( tx[2] );
+    fclose( tx[3] );
 }
 
 void test_init( void )
 {
+    ClientList list;
+    list_init( &list );
     TEST_ASSERT_EQUAL( 0, list.head );
+    list_destroy( &list );
 }
 
 // Test every permutation of inserting 4 names.
@@ -123,8 +143,11 @@ void test_insert23( void ) { TEST_INSERT( 3, 2, 1, 0 ) }
 
 void test_delete_empty( void )
 {
+    ClientList list;
+    list_init( &list );
     list_delete( &list, names[1].str );
     TEST_ASSERT_EQUAL( 0, list.head );
+    list_destroy( &list );
 }
 // Test every permutation of deleting 4 names.
 void test_delete0 ( void ) { TEST_DELETE( 0, 1, 2, 3, 1, 2, 3, 2, 3, 3 ) }
@@ -154,179 +177,102 @@ void test_delete23( void ) { TEST_DELETE( 3, 2, 1, 0, 0, 1, 2, 0, 1, 0 ) }
 
 void test_list_send_to_node( void )
 {
-    const char *str = "It isn't true that my mattress is made of cotton candy.";
-    DynString line;
-    dynstring_init( &line, 20 );
-
-    FILE *kingston_out = fopen( "build/test_list_send_to_node.out", "w+" );
-    ListNode *node;
-    pthread_mutex_t lock0, lock1, lock2, lock3;
-    pthread_mutex_init( &lock0, 0 );
-    node = list_node_init( &names[1], kingston_out, &lock0 );
-    list_insert( &list, node );
-    node = list_node_init( &names[0], (FILE*)0, &lock1 );
-    list_insert( &list, node );
-    node = list_node_init( &names[2], (FILE*)2, &lock2 );
-    list_insert( &list, node );
-    node = list_node_init( &names[3], (FILE*)3, &lock3 );
-    list_insert( &list, node );
+    static const char *str = "It isn't true that my mattress is made of cotton candy.";
 
     list_send_to_node( &list, names[1].str, str );
-    rewind( kingston_out );
-    dynstring_readline( &line, kingston_out );
+    rewind( tx[1] );
+    dynstring_readline( &line, tx[1] );
     TEST_ASSERT_EQUAL_STRING( str, line.str );
-
-    fclose( kingston_out );
-    dynstring_destroy( &line );
 }
 
-void test_inc_stat( void )
+void test_list_inc_stat( void )
 {
-    ListNode *node, *nannie;
-    pthread_mutex_t lock0, lock1, lock2, lock3;
-    pthread_mutex_init( &lock0, 0 );
-    node = list_node_init( &names[1], (FILE*)1, &lock0 );
-    list_insert( &list, node );
-    node = list_node_init( &names[0], (FILE*)0, &lock1 );
-    list_insert( &list, node );
-    nannie = list_node_init( &names[2], (FILE*)2, &lock2 );
-    list_insert( &list, nannie );
-    node = list_node_init( &names[3], (FILE*)3, &lock3 );
-    list_insert( &list, node );
+    TEST_ASSERT_EQUAL( 0, nodes[2]->data.say );
+    TEST_ASSERT_EQUAL( 0, nodes[2]->data.kick );
+    TEST_ASSERT_EQUAL( 0, nodes[2]->data.list );
 
-    TEST_ASSERT_EQUAL( 0, nannie->data.say );
-    TEST_ASSERT_EQUAL( 0, nannie->data.kick );
-    TEST_ASSERT_EQUAL( 0, nannie->data.list );
+    list_inc_stat( nodes[2], 's' );
+    TEST_ASSERT_EQUAL( 1, nodes[2]->data.say );
+    TEST_ASSERT_EQUAL( 0, nodes[2]->data.kick );
+    TEST_ASSERT_EQUAL( 0, nodes[2]->data.list );
 
-    inc_stat( &list, nannie, 's' );
-    TEST_ASSERT_EQUAL( 1, nannie->data.say );
-    TEST_ASSERT_EQUAL( 0, nannie->data.kick );
-    TEST_ASSERT_EQUAL( 0, nannie->data.list );
+    list_inc_stat( nodes[2], 'k' );
+    TEST_ASSERT_EQUAL( 1, nodes[2]->data.say );
+    TEST_ASSERT_EQUAL( 1, nodes[2]->data.kick );
+    TEST_ASSERT_EQUAL( 0, nodes[2]->data.list );
 
-    inc_stat( &list, nannie, 'k' );
-    TEST_ASSERT_EQUAL( 1, nannie->data.say );
-    TEST_ASSERT_EQUAL( 1, nannie->data.kick );
-    TEST_ASSERT_EQUAL( 0, nannie->data.list );
+    list_inc_stat( nodes[2], 'l' );
+    TEST_ASSERT_EQUAL( 1, nodes[2]->data.say );
+    TEST_ASSERT_EQUAL( 1, nodes[2]->data.kick );
+    TEST_ASSERT_EQUAL( 1, nodes[2]->data.list );
 
-    inc_stat( &list, nannie, 'l' );
-    TEST_ASSERT_EQUAL( 1, nannie->data.say );
-    TEST_ASSERT_EQUAL( 1, nannie->data.kick );
-    TEST_ASSERT_EQUAL( 1, nannie->data.list );
-
-    inc_stat( &list, nannie, 'o' );
-    TEST_ASSERT_EQUAL( 1, nannie->data.say );
-    TEST_ASSERT_EQUAL( 1, nannie->data.kick );
-    TEST_ASSERT_EQUAL( 1, nannie->data.list );
+    list_inc_stat( nodes[2], 'o' );
+    TEST_ASSERT_EQUAL( 1, nodes[2]->data.say );
+    TEST_ASSERT_EQUAL( 1, nodes[2]->data.kick );
+    TEST_ASSERT_EQUAL( 1, nodes[2]->data.list );
 }
 
-void test_send_to_all( void )
+void test_list_send_to_all( void )
 {
     static const char *test_str = "He liked to play with words in the bathtub.";
-    DynString line;
-    dynstring_init( &line, 50 );
 
-    ListNode *node;
-    pthread_mutex_t lock0, lock1, lock2, lock3;
-    pthread_mutex_init( &lock0, 0 );
-    pthread_mutex_init( &lock1, 0 );
-    pthread_mutex_init( &lock2, 0 );
-    pthread_mutex_init( &lock3, 0 );
-    FILE *out0 = fopen( "build/test_send_to_all0.out", "w+" );
-    FILE *out1 = fopen( "build/test_send_to_all1.out", "w+" );
-    FILE *out2 = fopen( "build/test_send_to_all2.out", "w+" );
-    FILE *out3 = fopen( "build/test_send_to_all3.out", "w+" );
+    list_send_to_all( &list, test_str );
 
-    node = list_node_init( &names[1], out1, &lock1 );
-    list_insert( &list, node );
-    node = list_node_init( &names[0], out0, &lock0 );
-    list_insert( &list, node );
-    node = list_node_init( &names[2], out2, &lock2 );
-    list_insert( &list, node );
-    node = list_node_init( &names[3], out3, &lock3 );
-    list_insert( &list, node );
+    rewind( tx[0] );
+    rewind( tx[1] );
+    rewind( tx[2] );
+    rewind( tx[3] );
 
-    send_to_all( &list, test_str );
-
-    rewind( out0 );
-    rewind( out1 );
-    rewind( out2 );
-    rewind( out3 );
-
-    dynstring_readline( &line, out0 );
+    dynstring_readline( &line, tx[0] );
     TEST_ASSERT_EQUAL_STRING( test_str, line.str );
-    dynstring_readline( &line, out1 );
+    dynstring_readline( &line, tx[1] );
     TEST_ASSERT_EQUAL_STRING( test_str, line.str );
-    dynstring_readline( &line, out2 );
+    dynstring_readline( &line, tx[2] );
     TEST_ASSERT_EQUAL_STRING( test_str, line.str );
-    dynstring_readline( &line, out3 );
+    dynstring_readline( &line, tx[3] );
     TEST_ASSERT_EQUAL_STRING( test_str, line.str );
-
-    fclose( out3 );
-    fclose( out2 );
-    fclose( out1 );
-    fclose( out0 );
-    dynstring_destroy( &line );
 }
 
-void test_get_names_list0( void )
+void test_list_get_names_list0( void )
 {
-    DynString names;
-    dynstring_init( &names, 10 );
+    ClientList list;
+    list_init( &list );
 
-    get_names_list( &list, &names );
-    TEST_ASSERT_EQUAL_STRING( "", names.str );
-    TEST_ASSERT_EQUAL( 0, names.length );
-    TEST_ASSERT_EQUAL( 10, names.size );
+    list_get_names_list( &list, &line );
+    TEST_ASSERT_EQUAL_STRING( "", line.str );
+    TEST_ASSERT_EQUAL( 0, line.length );
+    TEST_ASSERT_EQUAL( 50, line.size );
 
-    dynstring_destroy( &names );
+    list_destroy( &list );
 }
 
-void test_get_names_list1( void )
+void test_list_get_names_list1( void )
 {
-    INSERT_DUMMY()
-    DynString names;
-    dynstring_init( &names, 10 );
-
-    get_names_list( &list, &names );
-    TEST_ASSERT_EQUAL_STRING( "Clementine,Kingston,Nannie,Vicki", names.str );
-    TEST_ASSERT_EQUAL( 32, names.length );
-    TEST_ASSERT_EQUAL( 40, names.size );
-
-    dynstring_destroy( &names );
+    list_get_names_list( &list, &line );
+    TEST_ASSERT_EQUAL_STRING( "Clementine,Kingston,Nannie,Vicki", line.str );
+    TEST_ASSERT_EQUAL( 32, line.length );
+    TEST_ASSERT_EQUAL( 50, line.size );
 }
 
 void test_list_print_stats( void )
 {
     unsigned int i;
-    DynString line;
-    dynstring_init( &line, 32 );
 
-    ListNode *clementine, *kingston, *nannie, *vicki;
-    pthread_mutex_t lock0, lock1, lock2, lock3;
-    kingston = list_node_init( &names[1], (FILE*)1, &lock1 );
-    list_insert( &list, kingston );
-    clementine = list_node_init( &names[0], (FILE*)0, &lock0 );
-    list_insert( &list, clementine );
-    nannie = list_node_init( &names[2], (FILE*)2, &lock2 );
-    list_insert( &list, nannie );
-    vicki = list_node_init( &names[3], (FILE*)3, &lock3 );
-    list_insert( &list, vicki );
+    for( i = 0; i < 9; i++ ) list_inc_stat( nodes[0], 's' );
+    for( i = 0; i < 17; i++ ) list_inc_stat( nodes[0], 'k' );
+    for( i = 0; i < 16; i++ ) list_inc_stat( nodes[0], 'l' );
 
-    for( i = 0; i < 9; i++ ) inc_stat( &list, clementine, 's' );
-    for( i = 0; i < 17; i++ ) inc_stat( &list, clementine, 'k' );
-    for( i = 0; i < 16; i++ ) inc_stat( &list, clementine, 'l' );
+    for( i = 0; i < 16; i++ ) list_inc_stat( nodes[1], 's' );
+    for( i = 0; i < 14; i++ ) list_inc_stat( nodes[1], 'k' );
+    for( i = 0; i < 4; i++ ) list_inc_stat( nodes[1], 'l' );
 
-    for( i = 0; i < 16; i++ ) inc_stat( &list, kingston, 's' );
-    for( i = 0; i < 14; i++ ) inc_stat( &list, kingston, 'k' );
-    for( i = 0; i < 4; i++ ) inc_stat( &list, kingston, 'l' );
+    for( i = 0; i < 4; i++ ) list_inc_stat( nodes[2], 's' );
+    for( i = 0; i < 19; i++ ) list_inc_stat( nodes[2], 'k' );
+    for( i = 0; i < 17; i++ ) list_inc_stat( nodes[2], 'l' );
 
-    for( i = 0; i < 4; i++ ) inc_stat( &list, nannie, 's' );
-    for( i = 0; i < 19; i++ ) inc_stat( &list, nannie, 'k' );
-    for( i = 0; i < 17; i++ ) inc_stat( &list, nannie, 'l' );
-
-    for( i = 0; i < 12; i++ ) inc_stat( &list, vicki, 's' );
-    for( i = 0; i < 19; i++ ) inc_stat( &list, vicki, 'k' );
-    for( i = 0; i < 7; i++ ) inc_stat( &list, vicki, 'l' );
+    for( i = 0; i < 12; i++ ) list_inc_stat( nodes[3], 's' );
+    for( i = 0; i < 19; i++ ) list_inc_stat( nodes[3], 'k' );
+    for( i = 0; i < 7; i++ ) list_inc_stat( nodes[3], 'l' );
 
     FILE *err = freopen( "build/test_list_print_stats.err", "w+", stderr );
     list_print_stats( &list );
@@ -342,7 +288,6 @@ void test_list_print_stats( void )
     TEST_ASSERT_EQUAL_STRING( "Vicki:SAY:12:KICK:19:LIST:7", line.str );
 
     fclose( err );
-    dynstring_destroy( &line );
 }
 
 int main( void )
@@ -408,10 +353,10 @@ int main( void )
     RUN_TEST( test_delete23 );
 
     RUN_TEST( test_list_send_to_node );
-    RUN_TEST( test_inc_stat );
-    RUN_TEST( test_send_to_all );
-    RUN_TEST( test_get_names_list0 );
-    RUN_TEST( test_get_names_list1 );
+    RUN_TEST( test_list_inc_stat );
+    RUN_TEST( test_list_send_to_all );
+    RUN_TEST( test_list_get_names_list0 );
+    RUN_TEST( test_list_get_names_list1 );
     RUN_TEST( test_list_print_stats );
 
     dynstring_destroy( &names[3] );
