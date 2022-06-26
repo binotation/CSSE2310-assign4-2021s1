@@ -12,19 +12,18 @@ void setUp( void )
 void tearDown( void )
 {
     dynstring_destroy( &dstr );
-    TEST_ASSERT_EQUAL( 0, dstr.size );
 }
 
 void test_dynstring_init( void )
 {
     TEST_ASSERT_EQUAL( '\0', dstr.str[0] );
-    TEST_ASSERT_EQUAL( 10, dstr.size );
     TEST_ASSERT_EQUAL( 0, dstr.length );
+    TEST_ASSERT_EQUAL( 10, dstr.size );
 }
 
 void test_dynstring_nfrom( void )
 {
-    const char *name = "Bentley";
+    static const char *name = "Bentley";
     DynString dname;
     dynstring_nfrom( &dname, name, 7, 8 );
     TEST_ASSERT_EQUAL_STRING( name, dname.str );
@@ -35,17 +34,19 @@ void test_dynstring_nfrom( void )
 
 void test_dynstring_npush_empty( void )
 {
-    DynString sentence;
-    dynstring_nfrom( &sentence, "My favourite color is", 21, 23 );
-    TEST_ASSERT_EQUAL_STRING( "My favourite color is", sentence.str );
-    TEST_ASSERT_EQUAL( 21, sentence.length );
-    TEST_ASSERT_EQUAL( 23, sentence.size );
+    static const char *sentence = "My favourite color is";
+    DynString dsentence;
+    dynstring_nfrom( &dsentence, sentence, 21, 23 );
+    TEST_ASSERT_EQUAL_STRING( sentence, dsentence.str );
+    TEST_ASSERT_EQUAL( 21, dsentence.length );
+    TEST_ASSERT_EQUAL( 23, dsentence.size );
 
-    dynstring_npush( &sentence, "", 0 );
-    TEST_ASSERT_EQUAL_STRING( "My favourite color is", sentence.str );
-    TEST_ASSERT_EQUAL( 21, sentence.length );
-    TEST_ASSERT_EQUAL( 23, sentence.size );
-    dynstring_destroy( &sentence );
+    dynstring_npush( &dsentence, "", 0 );
+    TEST_ASSERT_EQUAL_STRING( sentence, dsentence.str );
+    TEST_ASSERT_EQUAL( 21, dsentence.length );
+    TEST_ASSERT_EQUAL( 23, dsentence.size );
+
+    dynstring_destroy( &dsentence );
 }
 
 void test_dynstring_npush0( void )

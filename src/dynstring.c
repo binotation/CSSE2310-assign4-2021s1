@@ -2,14 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TERMINATE_LAST_CHAR( dstr ) dstr->str[ --dstr->length ] = '\0'
-
 void dynstring_init( DynString *dstr, unsigned int size )
 {
     dstr->str = malloc( sizeof(char) * size );
-    dstr->str[0] = '\0';
+    dstr->str[ dstr->length = 0 ] = '\0';
     dstr->size = size;
-    dstr->length = 0;
 }
 
 void dynstring_nfrom( DynString *dstr, const char *str, unsigned int length, unsigned int size )
@@ -21,14 +18,12 @@ void dynstring_nfrom( DynString *dstr, const char *str, unsigned int length, uns
 
 void dynstring_destroy( DynString *dstr )
 {
-    dstr->size = 0;
     free( dstr->str );
 }
 
 void dynstring_clear( DynString *dstr )
 {
-    dstr->length = 0;
-    dstr->str[0] = '\0';
+    dstr->str[ dstr->length = 0 ] = '\0';
 }
 
 void dynstring_npush( DynString *dstr, const char *str, unsigned int length )
@@ -64,7 +59,7 @@ char dynstring_popc( DynString *dstr )
 
 enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
 {
-    dynstring_clear( dstr );
+    dstr->str[ dstr->length = 0 ] = '\0';
     char *s;
     unsigned int count = 0;				// Number of iterations
     unsigned int num;					// Number of chars read in the current iteration
@@ -96,7 +91,7 @@ enum ReadlineResult dynstring_readline( DynString *dstr, FILE *stream )
             }
             else
             {
-                TERMINATE_LAST_CHAR( dstr );
+                dstr->str[ --dstr->length ] = '\0';
                 return READLINE_SUCCESS;
             }
         }
