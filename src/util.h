@@ -7,12 +7,22 @@
 
 #include <stdbool.h>
 
+/**
+ * Represents a string slice.
+ * @param .str		pointer into string
+ * @param .length	length of slice as number of chars
+ */
 typedef struct
 {
     const char *str;
     unsigned int length;
 } StrSlice;
 
+/**
+ * The two args of a two-argument command.
+ * @param .arg1	first arg as a string slice
+ * @param .arg2	second arg as a string slice
+ */
 typedef struct
 {
     StrSlice arg1;

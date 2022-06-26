@@ -26,12 +26,12 @@
  * Data about a client. This list is not responsible for freeing up allocated memory pointed to by
  * members of this struct, i.e. *name and *tx. Below, I describe how the variable is shared by its
  * client_handler thread.
- * @param name		name dynstring, shared read-only
- * @param tx		stream for transmitting to client, shared writable
- * @param tx_lock	pointer to transmission stream mutex, shared mutex (atomic)
- * @param say		number of times received SAY: from client, not shared
- * @param kick		number of times received KICK: from client, not shared
- * @param list		number of times received LIST: from client, not shared
+ * @param .name		name dynstring, shared read-only
+ * @param .tx		stream for transmitting to client, shared writable
+ * @param .tx_lock	pointer to transmission stream mutex, shared mutex (atomic)
+ * @param .say		number of times received SAY: from client, not shared
+ * @param .kick		number of times received KICK: from client, not shared
+ * @param .list		number of times received LIST: from client, not shared
  */
 typedef struct
 {
@@ -45,8 +45,8 @@ typedef struct
 
 /**
  * A node in the linked list.
- * @param data	client data
- * @param next	pointer to the next node
+ * @param .data	client data
+ * @param .next	pointer to the next node
  */
 typedef struct ListNode ListNode;
 struct ListNode
@@ -57,8 +57,8 @@ struct ListNode
 
 /**
  * Represents the list of clients.
- * @param head	the head node of the linked list
- * @param lock	a mutex which protects the list
+ * @param .head	the head node of the linked list
+ * @param .lock	a mutex which protects the list
  */
 typedef struct
 {
