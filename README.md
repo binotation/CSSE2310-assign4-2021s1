@@ -39,19 +39,3 @@ Run client
 ```
 build/client Nichola test/testfiles/auth.txt 127.0.0.1 22427
 ```
-
-## Testing
-Using valgrind memcheck, you can view the memory usage of the server and client with the `memcheck_server.sh` and `memcheck_client.sh` scripts.
-
-For a load test:
-```
-build/server test/testfiles/auth.txt 10754 > build/server.out 2> build/server.err &
-python scripts/load_test.py
-chmod +x load_test.sh
-./load_test.sh
-```
-This attempts to connect 2500 clients at once. Useful for detecting server memory leaks and invalid read/writes from concurrency related bugs. Also, the client processes tend to not terminate. Kill clients with:
-
-```
-for pid in $(ps -ef | grep 'build/client' | awk '{print $2}'); do kill $pid; done
-```

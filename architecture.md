@@ -40,6 +40,8 @@ getconf GNU_LIBPTHREAD_VERSION
 2. Handles SIGHUP and writes to stderr, ignores SIGPIPE (print_stats_sig_handler)
 3. Handles receiving from clients, writing to clients and writing to stdout. Because another client_handler can write to the client, the transmission stream should be mutex protected. Only the dedicated client_handler can receive from the client however. This is not efficient usage of a thread because most of the time the thread is blocked on I/O but we do it for simplicity.
 
+For more information see the header files `serverlib.h` and `list.h`.
+
 ## Data structs
 ### dynstring.c/h
 This is a dynamic string which expands the buffer to accommodate more data. Mainly used for reading unknown-sized strings from streams. Does a lot of bounds-checking though.
@@ -59,3 +61,6 @@ Singly linked list for storing clients' information in ASCII order (by their nam
     - util.c/h
 
 `server.c` and `client.c` only contain a `main()` function, the rest of the implementation is in the corresponding `*lib.c/h` for unit testing purposes.
+
+## Issues
+- A client can close the socket before the server has received all its messages. An implication of this is the server may not see the client's last "LEAVE:" message and appear as if the client disconnected. This happens under heavy loads. (race condition)
