@@ -7,19 +7,24 @@
 #include <pthread.h>
 #include <signal.h>
 
+// Error messages
 #define USAGE "Usage: server authfile [port]\n"
 #define AUTHFILE_ERR_MSG "Authfile error\n"
 #define PORT_ERR_MSG "Port invalid\n"
 #define COMM_ERR_MSG "Communications error\n"
 
-// Server exit codes
+// Exit codes
 #define NO_ERR 0
 #define ARGS_ERR 1
 #define AUTHFILE_ERR 2
 #define PORT_ERR 3
 #define COMM_ERR 4
 
-// User args
+/**
+ * User args
+ * @param .authdstr	Auth string as dynstring
+ * @param .port		port as string
+ */
 typedef struct
 {
     DynString authdstr;
@@ -40,7 +45,10 @@ enum GetSockResult
     GET_SOCK_COMM_ERR,
 };
 
-// Number of times each command has been received.
+/**
+ * Number of times each command has been received. Singleton. This struct is read/write shared
+ * between threads.
+ */
 typedef struct
 {
     pthread_mutex_t lock;
@@ -63,7 +71,9 @@ enum ReceivedType
     RECV_LEAVE,
 };
 
-// Arg for signal handler routine.
+/**
+ * Arg for signal handler routine.
+ */
 typedef struct
 {
     ReceivedStats *stats;
@@ -71,7 +81,9 @@ typedef struct
     sigset_t set; // For which signals to handle
 } SigHandlerArg;
 
-// Arg for client handler routine.
+/**
+ * Arg for client handler routine.
+ */
 typedef struct
 {
     int client_sock;
@@ -81,7 +93,9 @@ typedef struct
     pthread_mutex_t *stdout_lock;
 } ClientHandlerArg;
 
-// Client read/write streams.
+/**
+ * Client read/write streams. Read/write shared between client_handler threads.
+ */
 typedef struct
 {
     FILE *rx;
@@ -116,15 +130,13 @@ enum GetSockResult get_listening_socket( const char *port, int *sock_fd, unsigne
 void *print_stats_sig_handler( void *temp );
 
 /**
- * Send AUTH:. If reply AUTH: with correct auth string then send OK: and return true; if incorrect,
- * return false. If not replied AUTH: send AUTH: again.
+ * Auth handshake. See architecture.md.
  */
 bool negotiate_auth( const DynString *authdstr, ClientStreams *streams, ReceivedStats *stats,
     DynString *line );
 
 /**
- * Send WHO:. If reply NAME: with a name that is not in use then send OK: and return true; if name
- * in use, send NAME_TAKEN: and WHO: and repeat. If not replied NAME:, send WHO: again.
+ * Name handshake. See architecture.md.
  */
 ListNode *negotiate_name( DynString *name, ClientStreams *streams, ReceivedStats *stats, ClientList *clients,
     DynString *line );

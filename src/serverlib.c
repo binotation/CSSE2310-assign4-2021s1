@@ -78,7 +78,7 @@ enum GetSockResult get_listening_socket( const char *port, int *sock_fd, unsigne
     *port_int = ntohs( ad.sin_port );
 
     // Begin listening
-    if( listen( *sock_fd, 3 ) < 0 ) return GET_SOCK_COMM_ERR;
+    if( listen( *sock_fd, 100 ) < 0 ) return GET_SOCK_COMM_ERR;
 
     return GET_SOCK_SUCCESS;
 }
@@ -115,6 +115,11 @@ void *print_stats_sig_handler( void *temp )
     return 0;
 }
 
+/**
+ * Update received stats.
+ * @param stats	received stats struct
+ * @param type	which stat to update
+ */
 static void update_stats( ReceivedStats *stats, enum ReceivedType type )
 {
     pthread_mutex_lock( &stats->lock );
@@ -141,6 +146,10 @@ static void update_stats( ReceivedStats *stats, enum ReceivedType type )
     pthread_mutex_unlock( &stats->lock );
 }
 
+/**
+ * Free allocated memory for client: streams, name dynstring, line dynstring, and arg from main
+ * thread.
+ */
 static void clean_up_client( ClientStreams *streams, DynString *name, DynString *line,
     void *arg )
 {
@@ -153,6 +162,9 @@ static void clean_up_client( ClientStreams *streams, DynString *name, DynString 
     free( arg );
 }
 
+/**
+ * Lock stream mutex, write, flush, unlock.
+ */
 static void write_flush_safe( const char *str, FILE *tx, pthread_mutex_t *tx_lock )
 {
     pthread_mutex_lock( tx_lock );
@@ -222,6 +234,9 @@ ListNode *negotiate_name( DynString *name, ClientStreams *streams, ReceivedStats
     } while(1);
 }
 
+/**
+ * Send ENTER:name to all clients. Print who has entered to stdout.
+ */
 static void send_enter( ClientList *clients, const DynString *name, pthread_mutex_t *stdout_lock )
 {
     // strlen( "ENTER:" ) + strlen( name ) + strlen( "\n\0" )
@@ -236,6 +251,9 @@ static void send_enter( ClientList *clients, const DynString *name, pthread_mute
     pthread_mutex_unlock( stdout_lock );
 }
 
+/**
+ * Send LEAVE:name to all clients. Print who has left to stdout.
+ */
 static void send_leave( ClientList *clients, const DynString *name, pthread_mutex_t *stdout_lock )
 {
     // strlen( "LEAVE:" ) + strlen( name ) + strlen( "\n\0" )
@@ -250,6 +268,9 @@ static void send_leave( ClientList *clients, const DynString *name, pthread_mute
     pthread_mutex_unlock( stdout_lock );
 }
 
+/**
+ * Update stats and send MSG:name:message to all clients. Print message to stdout.
+ */
 static void handle_say( ListNode *client, ClientList *clients, ReceivedStats *stats,
     const DynString *name, DynString *line, pthread_mutex_t *stdout_lock )
 {
@@ -273,6 +294,9 @@ static void handle_say( ListNode *client, ClientList *clients, ReceivedStats *st
     pthread_mutex_unlock( stdout_lock );
 }
 
+/**
+ * Update stats and kick target client by sending KICK: to them.
+ */
 static void kick( ListNode *client, ClientList *clients, ReceivedStats *stats, DynString *line )
 {
     list_inc_stat( client, 'k' );
@@ -282,6 +306,9 @@ static void kick( ListNode *client, ClientList *clients, ReceivedStats *stats, D
     list_send_to_node( clients, name, "KICK:\n" );
 }
 
+/**
+ * Update stats and send LIST:list_of_names to asking client.
+ */
 static void handle_list( ListNode *client, ClientList *clients, ReceivedStats *stats )
 {
     list_inc_stat( client, 'l' );
